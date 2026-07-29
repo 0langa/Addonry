@@ -1,0 +1,30 @@
+.recall/
+generated/
+
+# Dependencies and build output
+node_modules/
+dist/
+build/
+coverage/
+.venv/
+
+# Tool caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+__pycache__/
+*.py[cod]
+
+# Local state and secrets
+.env
+.env.*
+!.env.example
+*.log
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+
