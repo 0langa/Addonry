@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-e2e:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Unit and repository checks
+        shell: pwsh
+        run: |
+          python -m unittest discover -s tests -v
+          python scripts/validate_repository.py
+          node --check scripts/smoke_chrome_devtools_mcp.cjs
+          node --check skills/create-chrome-extension/scripts/verify_extension.cjs
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path scripts/start-chrome-devtools-mcp.ps1),
+            [ref]$null,
+            [ref]$errors
+          ) | Out-Null
+          if ($errors.Count) { throw ($errors | Out-String) }
+      - name: Pinned Chrome DevTools MCP startup
+        shell: pwsh
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-chrome-devtools-mcp.ps1 -SelfTest
+          node scripts/smoke_chrome_devtools_mcp.cjs
+      - name: Generated extension real-Chrome smoke
+        shell: pwsh
+        run: |
+          $output = Join-Path $env:RUNNER_TEMP 'addonry-generated'
+          python skills/create-chrome-extension/scripts/scaffold_extension.py --slug ci-smoke --name 'CI Smoke' --description 'Addonry real Chrome smoke.' --output-root $output
+          powershell -NoProfile -ExecutionPolicy Bypass -File skills/create-chrome-extension/scripts/verify-extension.ps1 -ExtensionPath (Join-Path $output 'ci-smoke') -ScenarioPath (Join-Path $output 'ci-smoke\tests\e2e.cjs')

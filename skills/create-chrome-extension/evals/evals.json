@@ -1,0 +1,23 @@
+{
+  "skill_name": "create-chrome-extension",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "$create-chrome-extension Build a toolbar extension that closes every tab except the active one, then install and verify it.",
+      "expected_output": "Clarifies pinned-tab and multi-window behavior, builds a least-permission Manifest V3 extension, runs tailored real-Chrome E2E and DevTools MCP checks, then installs or reports one protected UI action.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "/addonry:create-chrome-extension On this product page, collect every PDF link in DOM order and copy unique absolute URLs.",
+      "expected_output": "Inspects representative page with Chrome DevTools MCP, confirms origin and duplicate rules, builds page-specific extension with narrow access, tests fixture and live page, and installs it.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "/skill:create-chrome-extension Make a cookie exporter for only example.com that never logs values and writes local JSON.",
+      "expected_output": "Treats cookie values as credentials, confirms fields and security risks, requests narrow cookie/host permissions, validates redaction and export behavior, and refuses broader session extraction.",
+      "files": []
+    }
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "name": "addonry",
+  "version": "0.1.0",
+  "description": "Manual-only tri-client plugin for autonomous end-to-end Chrome extension development.",
+  "author": {
+    "name": "0langa"
+  },
+  "homepage": "https://github.com/0langa/Addonry",
+  "repository": "https://github.com/0langa/Addonry",
+  "license": "MIT",
+  "keywords": [
+    "chrome",
+    "browser-extension",
+    "manifest-v3",
+    "automation",
+    "testing"
+  ],
+  "skills": "./skills",
+  "mcpServers": "./.mcp.json"
+}

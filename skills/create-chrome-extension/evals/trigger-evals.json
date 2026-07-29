@@ -1,0 +1,162 @@
+[
+  {
+    "id": "T001",
+    "query": "$create-chrome-extension Make a one-click extension that closes every tab except this one.",
+    "should_trigger": true,
+    "reason": "User explicitly invokes Addonry and requests extension delivery.",
+    "competing_skills": [],
+    "expected_routing": "Activate manual workflow, clarify pinned and window scope, then deliver end to end."
+  },
+  {
+    "id": "T002",
+    "query": "/addonry:create-chrome-extension Pull all .zip download links from this page and save them as text.",
+    "should_trigger": true,
+    "reason": "User uses Claude plugin skill namespace and requests a page helper.",
+    "competing_skills": ["chrome:control-chrome"],
+    "expected_routing": "Addonry owns extension build; Chrome control may assist final install only."
+  },
+  {
+    "id": "T003",
+    "query": "/skill:create-chrome-extension I want a popup that formats pasted JSON and copies it back.",
+    "should_trigger": true,
+    "reason": "Kimi manual skill invocation plus concrete extension request.",
+    "competing_skills": [],
+    "expected_routing": "Build dependency-free popup utility and verify clipboard behavior."
+  },
+  {
+    "id": "T004",
+    "query": "$create-chrome-extension Click every visible expand button on this site.",
+    "should_trigger": true,
+    "reason": "Codex manual skill invocation and scoped site automation request.",
+    "competing_skills": ["playwright"],
+    "expected_routing": "Build durable extension rather than perform one-off browser automation."
+  },
+  {
+    "id": "T005",
+    "query": "/addonry:create-chrome-extension Create a helper in C:\\Users\\Julius\\source\\repos\\Addonry that copies current tab title and URL.",
+    "should_trigger": true,
+    "reason": "Claude manual skill invocation plus path-specific personal workflow.",
+    "competing_skills": [],
+    "expected_routing": "Create ignored generated project and avoid Git publication."
+  },
+  {
+    "id": "T006",
+    "query": "/skill:create-chrome-extension Build a context-menu action that downloads selected image URLs.",
+    "should_trigger": true,
+    "reason": "Kimi manual skill invocation and medium-scope extension request.",
+    "competing_skills": [],
+    "expected_routing": "Clarify filename/duplicate rules, then build and test downloads."
+  },
+  {
+    "id": "T007",
+    "query": "$create-chrome-extension I need cookie import/export only for my local test site.",
+    "should_trigger": true,
+    "reason": "Explicit invocation with sensitive but bounded extension feature.",
+    "competing_skills": ["security-best-practices"],
+    "expected_routing": "Run sensitive intake and least-permission workflow before implementation."
+  },
+  {
+    "id": "T008",
+    "query": "/addonry:create-chrome-extension Add a toolbar button that turns this page's table into CSV.",
+    "should_trigger": true,
+    "reason": "Explicit plugin invocation and site-derived export utility.",
+    "competing_skills": ["spreadsheets"],
+    "expected_routing": "Addonry builds extension; spreadsheet tooling is not primary."
+  },
+  {
+    "id": "T009",
+    "query": "/skill:create-chrome-extension Make a badge that counts matching links on current page.",
+    "should_trigger": true,
+    "reason": "Explicit skill invocation with current-page extension behavior.",
+    "competing_skills": [],
+    "expected_routing": "Clarify matching rule, implement activeTab/scripting flow, and verify badge."
+  },
+  {
+    "id": "T010",
+    "query": "$create-chrome-extension Build next uBlock Origin with anti-detection and password storage.",
+    "should_trigger": true,
+    "reason": "Explicit invocation activates workflow, which must then refuse or downscope unsafe high-complexity scope.",
+    "competing_skills": ["security-threat-model"],
+    "expected_routing": "Activate Addonry, explain ceiling, refuse unsafe components, and offer a narrow convenience helper."
+  },
+  {
+    "id": "N001",
+    "query": "Can Chrome extensions close tabs programmatically?",
+    "should_trigger": false,
+    "reason": "General question without explicit Addonry invocation or build request.",
+    "competing_skills": ["official-ai-devdocs"],
+    "expected_routing": "Answer question normally; Addonry remains hidden."
+  },
+  {
+    "id": "N002",
+    "query": "Write manifest.json for a tiny Chrome extension.",
+    "should_trigger": false,
+    "reason": "Build-related request lacks explicit manual plugin invocation.",
+    "competing_skills": [],
+    "expected_routing": "Handle as ordinary coding task unless user explicitly invokes Addonry."
+  },
+  {
+    "id": "N003",
+    "query": "Use Chrome to click every expand button on this page once.",
+    "should_trigger": false,
+    "reason": "One-off browser automation belongs to Chrome control, not extension delivery.",
+    "competing_skills": ["chrome:control-chrome"],
+    "expected_routing": "Use Chrome control directly."
+  },
+  {
+    "id": "N004",
+    "query": "Use Addonry to review this existing browser extension for security issues.",
+    "should_trigger": false,
+    "reason": "Plain prose and review-only work do not invoke hidden manual skill or request E2E creation.",
+    "competing_skills": ["security-best-practices"],
+    "expected_routing": "Use repository security review workflow."
+  },
+  {
+    "id": "N005",
+    "query": "Create a Firefox add-on that formats JSON.",
+    "should_trigger": false,
+    "reason": "Wrong browser target and no explicit Addonry invocation.",
+    "competing_skills": [],
+    "expected_routing": "Treat as ordinary Firefox add-on task."
+  },
+  {
+    "id": "N006",
+    "query": "Use Playwright to test my extension's popup.",
+    "should_trigger": false,
+    "reason": "Testing existing extension belongs to browser testing unless Addonry is explicitly invoked.",
+    "competing_skills": ["playwright", "webapp-testing"],
+    "expected_routing": "Use requested testing tool."
+  },
+  {
+    "id": "N007",
+    "query": "I wish Chrome had a button that closed all other tabs.",
+    "should_trigger": false,
+    "reason": "Vague wish lacks explicit manual invocation and delivery request.",
+    "competing_skills": [],
+    "expected_routing": "Discuss options; do not start plugin workflow."
+  },
+  {
+    "id": "N008",
+    "query": "Rewrite README paragraph listing `$create-chrome-extension`, `/addonry:create-chrome-extension`, and `/skill:create-chrome-extension` examples.",
+    "should_trigger": false,
+    "reason": "Quoted provider-real invocation tokens inside documentation edit are not user invocation.",
+    "competing_skills": ["docs-truth-sync"],
+    "expected_routing": "Edit documentation only."
+  },
+  {
+    "id": "N009",
+    "query": "Install Chrome DevTools MCP for Claude Code.",
+    "should_trigger": false,
+    "reason": "MCP setup alone is provider configuration, not extension creation.",
+    "competing_skills": ["official-ai-devdocs"],
+    "expected_routing": "Use official provider docs and MCP setup workflow."
+  },
+  {
+    "id": "N010",
+    "query": "Use Addonry to build me the next uBlock Origin with anti-detection and password storage.",
+    "should_trigger": false,
+    "reason": "Plain prose is not manual skill syntax, and request exceeds intended safety/complexity ceiling.",
+    "competing_skills": ["security-threat-model"],
+    "expected_routing": "Decline or downscope; do not activate Addonry."
+  }
+]

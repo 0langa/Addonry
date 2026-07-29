@@ -1,0 +1,6 @@
+exports.run = async ({ manifest, openPopup, assert }) => {
+  const popup = await openPopup();
+  await popup.waitForSelector('[data-testid="ready"][data-initialized="true"]');
+  const heading = await popup.$eval('h1', (node) => node.textContent);
+  assert.equal(heading, manifest.name);
+};
