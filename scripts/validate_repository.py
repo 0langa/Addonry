@@ -18,8 +18,10 @@ REQUIRED_FILES = (
     ".codex-mcp.json",
     "skills/create-chrome-extension/SKILL.md",
     "skills/create-chrome-extension/agents/openai.yaml",
+    "commands/create-chrome-extension.md",
     "scripts/start-chrome-devtools-mcp.ps1",
     "scripts/smoke_chrome_devtools_mcp.cjs",
+    "scripts/sync_manual_command.py",
 )
 
 
@@ -52,19 +54,28 @@ def main() -> int:
             except (json.JSONDecodeError, ValueError) as error:
                 errors.append(f"invalid JSON {relative}: {error}")
     identities = {(item.get("name"), item.get("version")) for item in manifests}
-    if identities and identities != {("addonry", "0.1.0")}:
+    forge_text = (ROOT / "forge.yaml").read_text(encoding="utf-8")
+    version_match = re.search(r"(?m)^version:\s*([^\s]+)$", forge_text)
+    expected_version = version_match.group(1) if version_match else None
+    if identities and identities != {("addonry", expected_version)}:
         errors.append(f"provider identity drift: {sorted(map(str, identities))}")
 
     skill_path = ROOT / "skills/create-chrome-extension/SKILL.md"
     if skill_path.is_file():
         skill = skill_path.read_text(encoding="utf-8")
-        if "disable-model-invocation: true" not in skill:
-            errors.append("manual-only Claude frontmatter missing")
-        if "disableModelInvocation: true" not in skill:
-            errors.append("manual-only Kimi frontmatter missing")
         for reference in re.findall(r"\]\((references/[^)]+)\)", skill):
             if not (skill_path.parent / reference).is_file():
                 errors.append(f"missing skill reference: {reference}")
+
+    command_sync = subprocess.run(
+        ["python", "scripts/sync_manual_command.py"],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if command_sync.returncode:
+        errors.append(command_sync.stdout.strip() or command_sync.stderr.strip() or "manual command drift")
 
     openai_path = ROOT / "skills/create-chrome-extension/agents/openai.yaml"
     if openai_path.is_file() and "allow_implicit_invocation: false" not in openai_path.read_text(encoding="utf-8"):

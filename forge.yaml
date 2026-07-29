@@ -1,74 +1,80 @@
 name: addonry
-version: 0.1.0
-description: Manual-only tri-client plugin for autonomous end-to-end Chrome extension development.
+version: 0.1.1
+description: Manual-only tri-client plugin for autonomous end-to-end Chrome extension
+  development.
 providers:
-  - claude
-  - codex
-  - kimi
-
+- claude
+- codex
+- kimi
 surfaces:
   skills:
-    - name: create-chrome-extension
-      path: skills/create-chrome-extension/SKILL.md
-  commands: []
+  - name: create-chrome-extension
+    path: skills/create-chrome-extension/SKILL.md
+    providers:
+    - codex
+  commands:
+  - name: create-chrome-extension
+    path: commands/create-chrome-extension.md
+    providers:
+    - claude
+    - kimi
   agents: []
   hooks: []
   mcp:
-    - name: addonry-chrome-devtools
-      transport: stdio
-      package: powershell.exe
-      args:
-        - -NoLogo
-        - -NoProfile
-        - -NonInteractive
-        - -ExecutionPolicy
-        - Bypass
-        - -File
-        - ./scripts/start-chrome-devtools-mcp.ps1
-
+  - name: addonry-chrome-devtools
+    transport: stdio
+    package: powershell.exe
+    env: []
+    args:
+    - -NoLogo
+    - -NoProfile
+    - -NonInteractive
+    - -ExecutionPolicy
+    - Bypass
+    - -Command
+    - $roots = @($env:CLAUDE_PLUGIN_ROOT, $env:KIMI_PLUGIN_ROOT, $env:PLUGIN_ROOT,
+      (Get-Location).Path) | Where-Object { $_ }; & (Join-Path $roots[0] 'scripts/start-chrome-devtools-mcp.ps1')
 install:
   claude: ~/.claude/plugins/addonry/
   codex: ~/.codex/plugins/addonry/
   kimi: ~/.kimi-code/plugins/managed/addonry/
-
 settings_patches: {}
 marketplace: {}
-
 metadata:
   author: 0langa
   license: MIT
   homepage: https://github.com/0langa/Addonry
   repository: https://github.com/0langa/Addonry
   keywords:
-    - chrome
-    - browser-extension
-    - manifest-v3
-    - automation
-    - testing
-  skill_instructions: >-
-    Addonry is manual-only. Use its skill and addonry-chrome-devtools MCP tools only
-    after the user explicitly invokes Addonry or create-chrome-extension in the current request.
+  - chrome
+  - browser-extension
+  - manifest-v3
+  - automation
+  - testing
+  skill_instructions: Addonry is manual-only. Use its workflow and addonry-chrome-devtools
+    MCP tools only after the user explicitly runs the provider's create-chrome-extension
+    skill or command.
   interface:
     display_name: Addonry
     short_description: Build personal Chrome extensions end to end
-    long_description: >-
-      Turns an explicit extension request into a scoped Manifest V3 project, tested in
-      real Chrome, verified with Chrome DevTools, and installed for personal use when possible.
+    long_description: Turns an explicit extension request into a scoped Manifest V3
+      project, tested in real Chrome, verified with Chrome DevTools, and installed
+      for personal use when possible.
     developer_name: 0langa
     category: Productivity
     capabilities:
-      - Browser
-      - Automation
-      - Write
+    - Browser
+    - Automation
+    - Write
     default_prompt:
-      - $create-chrome-extension Build and install a personal Chrome extension from my requirements.
-      - $create-chrome-extension Automate this repetitive browser workflow with a small extension.
+    - $addonry:create-chrome-extension Build and install a personal Chrome extension from
+      my requirements.
+    - $addonry:create-chrome-extension Automate this repetitive browser workflow with a small
+      extension.
     brand_color: '#7C3AED'
-
 provider_extras:
   claude: {}
   codex: {}
   kimi: {}
-
 options:
   shared_mcp_file: false

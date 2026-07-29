@@ -1,6 +1,6 @@
 {
   "name": "addonry",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Manual-only tri-client plugin for autonomous end-to-end Chrome extension development.",
   "author": {
     "name": "0langa"
@@ -15,7 +15,7 @@
     "automation",
     "testing"
   ],
-  "skills": "./skills/",
+  "commands": "./commands/",
   "interface": {
     "displayName": "Addonry",
     "shortDescription": "Build personal Chrome extensions end to end",
@@ -24,7 +24,7 @@
     "websiteURL": "https://github.com/0langa/Addonry",
     "brandColor": "#7C3AED"
   },
-  "skillInstructions": "Addonry is manual-only. Use its skill and addonry-chrome-devtools MCP tools only after the user explicitly invokes Addonry or create-chrome-extension in the current request.",
+  "skillInstructions": "Addonry is manual-only. Use its workflow and addonry-chrome-devtools MCP tools only after the user explicitly runs the provider's create-chrome-extension skill or command.",
   "mcpServers": {
     "addonry-chrome-devtools": {
       "command": "powershell.exe",
@@ -34,8 +34,8 @@
         "-NonInteractive",
         "-ExecutionPolicy",
         "Bypass",
-        "-File",
-        "./scripts/start-chrome-devtools-mcp.ps1"
+        "-Command",
+        "$roots = @($env:CLAUDE_PLUGIN_ROOT, $env:KIMI_PLUGIN_ROOT, $env:PLUGIN_ROOT, (Get-Location).Path) | Where-Object { $_ }; & (Join-Path $roots[0] 'scripts/start-chrome-devtools-mcp.ps1')"
       ],
       "cwd": "./"
     }

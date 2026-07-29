@@ -1,7 +1,13 @@
 ---
-name: create-chrome-extension
-description: Build, test, and install personal Manifest V3 Chrome extensions end to end. Use only when the user explicitly invokes Addonry or this skill and requests a small-to-medium browser utility, page helper, tab action, extractor, formatter, download helper, or narrowly scoped cookie tool.
+description: Build, test, and install a personal Chrome extension end to end
+argument-hint: <extension request>
 ---
+
+Addonry manual activation. Treat following command arguments as user's extension request:
+
+`$ARGUMENTS`
+
+Execute canonical workflow below. Do not stop after explaining it.
 
 # Create Chrome Extension
 
@@ -29,7 +35,7 @@ Generated extensions stay untracked and unpublished. Do not initialize Git, add 
 
 ## Start: intake and feasibility
 
-Read [intake-and-scope.md](references/intake-and-scope.md) before asking questions. Inspect available Chrome version, target pages, existing output directory, and relevant provider tools first.
+Read [intake-and-scope.md](../skills/create-chrome-extension/references/intake-and-scope.md) before asking questions. Inspect available Chrome version, target pages, existing output directory, and relevant provider tools first.
 
 Ask as many questions as needed, grouped into one concise batch when possible. Focus on observable behavior:
 
@@ -51,11 +57,11 @@ Treat low and medium personal utilities as normal. Examples: extract links, form
 
 Downscope or refuse work resembling a password manager, stealth surveillance, credential harvesting, session theft, security-control bypass, anti-bot evasion, enterprise force-install policy, broad ad blocking, or another system whose security/reliability burden exceeds convenience tooling. Explain boundary and offer smallest safe substitute.
 
-Personal use never relaxes permission minimization, secret handling, or data-loss safeguards. Follow [security-and-privacy.md](references/security-and-privacy.md) for cookies, authenticated pages, downloads, and sensitive browser data.
+Personal use never relaxes permission minimization, secret handling, or data-loss safeguards. Follow [security-and-privacy.md](../skills/create-chrome-extension/references/security-and-privacy.md) for cookies, authenticated pages, downloads, and sensitive browser data.
 
 ## Research and architecture
 
-Read [chrome-extension-architecture.md](references/chrome-extension-architecture.md) for relevant API family. Consult [official-sources.md](references/official-sources.md) whenever API shape, Chrome version support, install behavior, or provider configuration is uncertain. Prefer Chrome and provider primary sources.
+Read [chrome-extension-architecture.md](../skills/create-chrome-extension/references/chrome-extension-architecture.md) for relevant API family. Consult [official-sources.md](../skills/create-chrome-extension/references/official-sources.md) whenever API shape, Chrome version support, install behavior, or provider configuration is uncertain. Prefer Chrome and provider primary sources.
 
 Use these defaults unless task justifies more:
 
@@ -81,7 +87,7 @@ Before writing site-specific selectors or network assumptions:
 5. Prefer stable attributes and semantic relationships over fragile generated classes.
 6. Save no cookies, tokens, response bodies, or personal page content into repository or chat.
 
-Default MCP mode is isolated and usage statistics are disabled. For authenticated state, follow [browser-control.md](references/browser-control.md); never attach a raw debugging port to normal profile without explicit security warning.
+Default MCP mode is isolated and usage statistics are disabled. For authenticated state, follow [browser-control.md](../skills/create-chrome-extension/references/browser-control.md); never attach a raw debugging port to normal profile without explicit security warning.
 
 ## Create project
 
@@ -115,7 +121,7 @@ For downloads, sanitize filenames, handle duplicates deterministically, and veri
 
 ## Verify
 
-Read [testing-and-evidence.md](references/testing-and-evidence.md) before verification. Run layers in order so cheap failures surface first.
+Read [testing-and-evidence.md](../skills/create-chrome-extension/references/testing-and-evidence.md) before verification. Run layers in order so cheap failures surface first.
 
 ### Static gate
 
@@ -161,7 +167,7 @@ Distinguish deterministic harness pass from MCP live inspection. Both are eviden
 
 ## Install and final smoke
 
-Read [installation.md](references/installation.md). Prefer host's user-Chrome control surface for `chrome://extensions` UI when available. Otherwise open extensions page and provide exact generated directory for `Load unpacked`.
+Read [installation.md](../skills/create-chrome-extension/references/installation.md). Prefer host's user-Chrome control surface for `chrome://extensions` UI when available. Otherwise open extensions page and provide exact generated directory for `Load unpacked`.
 
 Chrome protects extension-management UI and file chooser. Do not bypass protection with profile database edits, registry force-install policy, or internal private APIs. If one manual selection remains, say so plainly; implementation can be verified while installation remains pending.
 
@@ -234,10 +240,10 @@ Answer normally; Addonry remains inactive because user did not invoke it or requ
 
 ## Related resources
 
-- [intake-and-scope.md](references/intake-and-scope.md)
-- [chrome-extension-architecture.md](references/chrome-extension-architecture.md)
-- [browser-control.md](references/browser-control.md)
-- [security-and-privacy.md](references/security-and-privacy.md)
-- [testing-and-evidence.md](references/testing-and-evidence.md)
-- [installation.md](references/installation.md)
-- [official-sources.md](references/official-sources.md)
+- [intake-and-scope.md](../skills/create-chrome-extension/references/intake-and-scope.md)
+- [chrome-extension-architecture.md](../skills/create-chrome-extension/references/chrome-extension-architecture.md)
+- [browser-control.md](../skills/create-chrome-extension/references/browser-control.md)
+- [security-and-privacy.md](../skills/create-chrome-extension/references/security-and-privacy.md)
+- [testing-and-evidence.md](../skills/create-chrome-extension/references/testing-and-evidence.md)
+- [installation.md](../skills/create-chrome-extension/references/installation.md)
+- [official-sources.md](../skills/create-chrome-extension/references/official-sources.md)

@@ -1,7 +1,7 @@
 interface:
   display_name: "Addonry: Create Chrome Extension"
   short_description: "Build and verify personal Chrome extensions"
-  default_prompt: "Use $create-chrome-extension to build and install a personal Chrome extension from my requirements."
+  default_prompt: "Use $addonry:create-chrome-extension to build and install a personal Chrome extension from my requirements."
 
 policy:
   allow_implicit_invocation: false

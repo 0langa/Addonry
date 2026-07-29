@@ -3,7 +3,7 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "$create-chrome-extension Build a toolbar extension that closes every tab except the active one, then install and verify it.",
+      "prompt": "$addonry:create-chrome-extension Build a toolbar extension that closes every tab except the active one, then install and verify it.",
       "expected_output": "Clarifies pinned-tab and multi-window behavior, builds a least-permission Manifest V3 extension, runs tailored real-Chrome E2E and DevTools MCP checks, then installs or reports one protected UI action.",
       "files": []
     },
@@ -15,7 +15,7 @@
     },
     {
       "id": 3,
-      "prompt": "/skill:create-chrome-extension Make a cookie exporter for only example.com that never logs values and writes local JSON.",
+      "prompt": "/addonry:create-chrome-extension Make a cookie exporter for only example.com that never logs values and writes local JSON.",
       "expected_output": "Treats cookie values as credentials, confirms fields and security risks, requests narrow cookie/host permissions, validates redaction and export behavior, and refuses broader session extraction.",
       "files": []
     }

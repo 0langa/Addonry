@@ -12,7 +12,7 @@ TOOLS = ROOT / "skills" / "create-chrome-extension" / "scripts"
 sys.path.insert(0, str(TOOLS))
 
 from generate_icons import PNG_SIGNATURE, generate_icons, parse_hex_color  # noqa: E402
-from scaffold_extension import scaffold  # noqa: E402
+from scaffold_extension import DEFAULT_OUTPUT_ROOT, scaffold  # noqa: E402
 from validate_extension import validate_extension  # noqa: E402
 
 
@@ -34,6 +34,9 @@ class IconTests(unittest.TestCase):
 
 
 class ScaffoldTests(unittest.TestCase):
+    def test_default_output_stays_under_plugin_root(self) -> None:
+        self.assertEqual(DEFAULT_OUTPUT_ROOT, ROOT / "generated")
+
     def test_scaffold_passes_static_validation(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             target = scaffold("tab-helper", "Tab Helper", "Keeps current tab visible.", Path(temporary))

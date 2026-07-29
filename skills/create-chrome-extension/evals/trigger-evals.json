@@ -1,7 +1,7 @@
 [
   {
     "id": "T001",
-    "query": "$create-chrome-extension Make a one-click extension that closes every tab except this one.",
+    "query": "$addonry:create-chrome-extension Make a one-click extension that closes every tab except this one.",
     "should_trigger": true,
     "reason": "User explicitly invokes Addonry and requests extension delivery.",
     "competing_skills": [],
@@ -17,7 +17,7 @@
   },
   {
     "id": "T003",
-    "query": "/skill:create-chrome-extension I want a popup that formats pasted JSON and copies it back.",
+    "query": "/addonry:create-chrome-extension I want a popup that formats pasted JSON and copies it back.",
     "should_trigger": true,
     "reason": "Kimi manual skill invocation plus concrete extension request.",
     "competing_skills": [],
@@ -25,7 +25,7 @@
   },
   {
     "id": "T004",
-    "query": "$create-chrome-extension Click every visible expand button on this site.",
+    "query": "$addonry:create-chrome-extension Click every visible expand button on this site.",
     "should_trigger": true,
     "reason": "Codex manual skill invocation and scoped site automation request.",
     "competing_skills": ["playwright"],
@@ -33,7 +33,7 @@
   },
   {
     "id": "T005",
-    "query": "/addonry:create-chrome-extension Create a helper in C:\\Users\\Julius\\source\\repos\\Addonry that copies current tab title and URL.",
+    "query": "/addonry:create-chrome-extension Create a helper that copies current tab title and URL.",
     "should_trigger": true,
     "reason": "Claude manual skill invocation plus path-specific personal workflow.",
     "competing_skills": [],
@@ -41,7 +41,7 @@
   },
   {
     "id": "T006",
-    "query": "/skill:create-chrome-extension Build a context-menu action that downloads selected image URLs.",
+    "query": "/addonry:create-chrome-extension Build a context-menu action that downloads selected image URLs.",
     "should_trigger": true,
     "reason": "Kimi manual skill invocation and medium-scope extension request.",
     "competing_skills": [],
@@ -49,7 +49,7 @@
   },
   {
     "id": "T007",
-    "query": "$create-chrome-extension I need cookie import/export only for my local test site.",
+    "query": "$addonry:create-chrome-extension I need cookie import/export only for my local test site.",
     "should_trigger": true,
     "reason": "Explicit invocation with sensitive but bounded extension feature.",
     "competing_skills": ["security-best-practices"],
@@ -65,7 +65,7 @@
   },
   {
     "id": "T009",
-    "query": "/skill:create-chrome-extension Make a badge that counts matching links on current page.",
+    "query": "/addonry:create-chrome-extension Make a badge that counts matching links on current page.",
     "should_trigger": true,
     "reason": "Explicit skill invocation with current-page extension behavior.",
     "competing_skills": [],
@@ -73,7 +73,7 @@
   },
   {
     "id": "T010",
-    "query": "$create-chrome-extension Build next uBlock Origin with anti-detection and password storage.",
+    "query": "$addonry:create-chrome-extension Build next uBlock Origin with anti-detection and password storage.",
     "should_trigger": true,
     "reason": "Explicit invocation activates workflow, which must then refuse or downscope unsafe high-complexity scope.",
     "competing_skills": ["security-threat-model"],
@@ -137,7 +137,7 @@
   },
   {
     "id": "N008",
-    "query": "Rewrite README paragraph listing `$create-chrome-extension`, `/addonry:create-chrome-extension`, and `/skill:create-chrome-extension` examples.",
+    "query": "Rewrite README paragraph listing `$addonry:create-chrome-extension` and `/addonry:create-chrome-extension` examples.",
     "should_trigger": false,
     "reason": "Quoted provider-real invocation tokens inside documentation edit are not user invocation.",
     "competing_skills": ["docs-truth-sync"],

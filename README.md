@@ -6,9 +6,9 @@ Invoke Addonry through provider's manual skill syntax, describe browser utility,
 
 | Provider | Manual invocation |
 | --- | --- |
-| Codex | `$create-chrome-extension Build ...` |
+| Codex | `$addonry:create-chrome-extension Build ...` |
 | Claude Code | `/addonry:create-chrome-extension Build ...` |
-| Kimi Code | `/skill:create-chrome-extension Build ...` |
+| Kimi Code | `/addonry:create-chrome-extension Build ...` |
 
 Hard manual-only flags intentionally prevent plain prose such as `Use Addonry ...` from activating hidden skill. This keeps unrelated Chrome work isolated. After invocation, normal prose requirements follow command.
 
@@ -21,8 +21,7 @@ Generated extensions live under `generated/<slug>/`. That directory is ignored b
 ## Manual-only contract
 
 - Codex: `agents/openai.yaml` disables implicit skill invocation.
-- Claude Code: `disable-model-invocation: true` keeps the skill hidden until manual invocation.
-- Kimi Code: the same frontmatter flag is supported as a manual-only alias.
+- Claude Code and Kimi Code: only namespaced slash command is exposed; no model-invocable skill is registered.
 - No plugin agent is registered for automatic delegation.
 - Bundled MCP tools remain host-visible while the plugin is enabled because current plugin hosts start declared MCP servers eagerly. Addonry instructions permit their use only after explicit invocation.
 
@@ -43,7 +42,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-chrome-devtool
 node scripts/smoke_chrome_devtools_mcp.cjs
 ```
 
-Large reusable runtime data and npm caches are placed on a non-system drive with more than 100 GB free when available. Source stays in this repository.
+Large reusable runtime data and npm caches use mounted `agent-devstorage`: `fast-primary` first, then `bulk-secondary`, under `shared-cache\Addonry\cache`. Source stays in this repository. Without a participating drive, runtime falls back to `%LOCALAPPDATA%\Addonry\runtime`.
 
 ## Provider development load
 

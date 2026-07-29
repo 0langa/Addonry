@@ -13,12 +13,28 @@ function Get-AddonryRuntimeRoot {
         return [System.IO.Path]::GetFullPath($env:ADDONRY_RUNTIME_ROOT)
     }
 
-    $bestDrive = [System.IO.DriveInfo]::GetDrives() |
-        Where-Object { $_.IsReady -and $_.Name -ne 'C:\' -and $_.AvailableFreeSpace -gt 100GB } |
-        Sort-Object AvailableFreeSpace -Descending |
-        Select-Object -First 1
-    if ($bestDrive) {
-        return Join-Path $bestDrive.RootDirectory.FullName 'devtmp\Addonry\runtime'
+    $candidates = foreach ($drive in [System.IO.DriveInfo]::GetDrives()) {
+        if (-not $drive.IsReady) { continue }
+        $devstorage = Join-Path $drive.RootDirectory.FullName 'agent-devstorage'
+        $identityPath = Join-Path $devstorage 'DRIVE-IDENTITY.json'
+        $contractPath = Join-Path $devstorage 'README.md'
+        if (-not (Test-Path -LiteralPath $identityPath) -or -not (Test-Path -LiteralPath $contractPath)) { continue }
+        try {
+            $identity = Get-Content -LiteralPath $identityPath -Raw | ConvertFrom-Json
+            [void](Get-Content -LiteralPath $contractPath -Raw)
+            $priority = switch ($identity.role) {
+                'fast-primary' { 0 }
+                'bulk-secondary' { 1 }
+                default { 2 }
+            }
+            [pscustomobject]@{ Root = $devstorage; Priority = $priority }
+        } catch {
+            continue
+        }
+    }
+    $selected = $candidates | Sort-Object Priority | Select-Object -First 1
+    if ($selected) {
+        return Join-Path $selected.Root 'shared-cache\Addonry\cache\runtime'
     }
 
     foreach ($candidate in @($env:PLUGIN_DATA, $env:CLAUDE_PLUGIN_DATA, $env:KIMI_PLUGIN_DATA)) {

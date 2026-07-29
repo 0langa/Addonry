@@ -1,6 +1,6 @@
 {
   "name": "addonry",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Manual-only tri-client plugin for autonomous end-to-end Chrome extension development.",
   "author": {
     "name": "0langa"
@@ -15,6 +15,6 @@
     "automation",
     "testing"
   ],
-  "skills": "./skills",
+  "commands": "./commands",
   "mcpServers": "./.mcp.json"
 }

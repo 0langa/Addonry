@@ -13,7 +13,7 @@ from pathlib import Path
 
 from generate_icons import generate_icons
 
-DEFAULT_OUTPUT_ROOT = Path(r"C:\Users\Julius\source\repos\Addonry\generated")
+DEFAULT_OUTPUT_ROOT = Path(__file__).resolve().parents[3] / "generated"
 SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
 
