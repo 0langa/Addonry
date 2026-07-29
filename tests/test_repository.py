@@ -24,7 +24,7 @@ class RepositoryTests(unittest.TestCase):
         self.assertIn("agents: []", forge)
         self.assertIn("allow_implicit_invocation: false", (ROOT / "skills/create-chrome-extension/agents/openai.yaml").read_text(encoding="utf-8"))
         self.assertIn(
-            "path: skills/create-chrome-extension/SKILL.md\n    providers:\n    - codex",
+            "path: skills/create-chrome-extension/SKILL.md\n    providers:\n    - codex\n    - kimi",
             forge,
         )
         self.assertIn(

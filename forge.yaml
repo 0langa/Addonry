@@ -1,5 +1,5 @@
 name: addonry
-version: 0.1.1
+version: 0.1.2
 description: Manual-only tri-client plugin for autonomous end-to-end Chrome extension
   development.
 providers:
@@ -12,6 +12,7 @@ surfaces:
     path: skills/create-chrome-extension/SKILL.md
     providers:
     - codex
+    - kimi
   commands:
   - name: create-chrome-extension
     path: commands/create-chrome-extension.md
@@ -53,7 +54,7 @@ metadata:
   - testing
   skill_instructions: Addonry is manual-only. Use its workflow and addonry-chrome-devtools
     MCP tools only after the user explicitly runs the provider's create-chrome-extension
-    skill or command.
+    skill or command, or explicitly names Addonry for Chrome extension creation.
   interface:
     display_name: Addonry
     short_description: Build personal Chrome extensions end to end

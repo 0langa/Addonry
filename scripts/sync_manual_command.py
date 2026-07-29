@@ -23,28 +23,35 @@ Execute canonical workflow below. Do not stop after explaining it.
 """
 
 
-def render() -> str:
+def canonical_body() -> str:
     source = SKILL.read_text(encoding="utf-8")
     parts = source.split("---", 2)
     if len(parts) != 3:
         raise ValueError("canonical skill frontmatter is malformed")
     body = parts[2].lstrip("\r\n")
     body = body.replace("(references/", "(../skills/create-chrome-extension/references/")
-    return HEADER + body
+    return body
+
+
+def render_command() -> str:
+    return HEADER + canonical_body()
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--write", action="store_true")
     args = parser.parse_args()
-    expected = render()
+    expected_command = render_command()
     if args.write:
         COMMAND.parent.mkdir(parents=True, exist_ok=True)
-        COMMAND.write_text(expected, encoding="utf-8", newline="\n")
+        COMMAND.write_text(expected_command, encoding="utf-8", newline="\n")
         print(f"Updated {COMMAND.relative_to(ROOT)}")
         return 0
-    if not COMMAND.is_file() or COMMAND.read_text(encoding="utf-8") != expected:
-        print("Manual command drift detected. Run scripts/sync_manual_command.py --write.")
+    drift = []
+    if not COMMAND.is_file() or COMMAND.read_text(encoding="utf-8") != expected_command:
+        drift.append(str(COMMAND.relative_to(ROOT)))
+    if drift:
+        print(f"Manual surface drift: {', '.join(drift)}. Run scripts/sync_manual_command.py --write.")
         return 1
     print("Manual command matches canonical workflow.")
     return 0

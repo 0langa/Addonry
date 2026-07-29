@@ -9,6 +9,7 @@ Invoke Addonry through provider's manual skill syntax, describe browser utility,
 | Codex | `$addonry:create-chrome-extension Build ...` |
 | Claude Code | `/addonry:create-chrome-extension Build ...` |
 | Kimi Code | `/addonry:create-chrome-extension Build ...` |
+| Kimi Code 0.29.x Windows fallback | `/skill:create-chrome-extension Build ...` |
 
 Hard manual-only flags intentionally prevent plain prose such as `Use Addonry ...` from activating hidden skill. This keeps unrelated Chrome work isolated. After invocation, normal prose requirements follow command.
 
@@ -21,7 +22,8 @@ Generated extensions live under `generated/<slug>/`. That directory is ignored b
 ## Manual-only contract
 
 - Codex: `agents/openai.yaml` disables implicit skill invocation.
-- Claude Code and Kimi Code: only namespaced slash command is exposed; no model-invocable skill is registered.
+- Claude Code: only namespaced slash command is exposed; no model-invocable skill is registered.
+- Kimi Code: namespaced slash command remains canonical. Manual-only `/skill:create-chrome-extension` fallback covers Kimi 0.29.x Windows builds that install plugins but omit plugin commands from command registry.
 - No plugin agent is registered for automatic delegation.
 - Bundled MCP tools remain host-visible while the plugin is enabled because current plugin hosts start declared MCP servers eagerly. Addonry instructions permit their use only after explicit invocation.
 

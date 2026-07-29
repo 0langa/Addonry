@@ -1,6 +1,6 @@
 {
   "name": "addonry",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Manual-only tri-client plugin for autonomous end-to-end Chrome extension development.",
   "author": {
     "name": "0langa"
@@ -15,6 +15,7 @@
     "automation",
     "testing"
   ],
+  "skills": "./skills/",
   "commands": "./commands/",
   "interface": {
     "displayName": "Addonry",
@@ -24,7 +25,7 @@
     "websiteURL": "https://github.com/0langa/Addonry",
     "brandColor": "#7C3AED"
   },
-  "skillInstructions": "Addonry is manual-only. Use its workflow and addonry-chrome-devtools MCP tools only after the user explicitly runs the provider's create-chrome-extension skill or command.",
+  "skillInstructions": "Addonry is manual-only. Use its workflow and addonry-chrome-devtools MCP tools only after the user explicitly runs the provider's create-chrome-extension skill or command, or explicitly names Addonry for Chrome extension creation.",
   "mcpServers": {
     "addonry-chrome-devtools": {
       "command": "powershell.exe",

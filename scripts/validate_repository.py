@@ -75,7 +75,7 @@ def main() -> int:
         text=True,
     )
     if command_sync.returncode:
-        errors.append(command_sync.stdout.strip() or command_sync.stderr.strip() or "manual command drift")
+        errors.append(command_sync.stdout.strip() or command_sync.stderr.strip() or "manual surface drift")
 
     openai_path = ROOT / "skills/create-chrome-extension/agents/openai.yaml"
     if openai_path.is_file() and "allow_implicit_invocation: false" not in openai_path.read_text(encoding="utf-8"):
