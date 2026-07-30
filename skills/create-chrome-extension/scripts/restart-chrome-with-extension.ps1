@@ -72,7 +72,10 @@ function Write-Result {
         [string]$ResolvedExtension,
         [string]$ResolvedChrome,
         [string[]]$LaunchArguments,
-        [string]$Detail
+        [string]$Detail,
+        [string]$ProductName,
+        [string]$ProductVersion,
+        [string]$Persistence = 'unknown-until-browser-verified'
     )
 
     [ordered]@{
@@ -82,7 +85,9 @@ function Write-Result {
         chromePath = $ResolvedChrome
         chromeWasRunning = $WasRunning
         profileDirectory = if ($ProfileDirectory) { $ProfileDirectory } else { $null }
-        persistence = 'startup-scoped'
+        browserProduct = $ProductName
+        browserVersion = $ProductVersion
+        persistence = $Persistence
         sessionRestoreRequested = $LaunchArguments -contains '--restore-last-session'
         launchArguments = $LaunchArguments
         timestamp = [DateTimeOffset]::UtcNow.ToString('o')
@@ -109,6 +114,12 @@ if (-not $AllowVolatilePath) {
 }
 
 $resolvedChrome = Resolve-ChromeExecutable -RequestedPath $ChromePath
+$versionInfo = (Get-Item -LiteralPath $resolvedChrome).VersionInfo
+$productName = [string]$versionInfo.ProductName
+$productVersion = [string]$versionInfo.ProductVersion
+$majorVersion = if ($productVersion -match '^(\d+)') { [int]$Matches[1] } else { 0 }
+$isUnsupportedBrandedChrome = $productName -eq 'Google Chrome' -and $majorVersion -ge 137
+
 $loadArgument = if ($resolvedExtension.Contains(' ')) {
     "--load-extension=`"$resolvedExtension`""
 } else {
@@ -126,23 +137,37 @@ if ($ProfileDirectory) {
 $initialProcesses = @(Get-MatchingChromeProcesses -ExecutablePath $resolvedChrome)
 $wasRunning = $initialProcesses.Count -gt 0
 
+if ($isUnsupportedBrandedChrome) {
+    Write-Result -State 'blocked-branded-chrome-load-extension-unsupported' -WasRunning $wasRunning `
+        -ResolvedExtension $resolvedExtension -ResolvedChrome $resolvedChrome -LaunchArguments @() `
+        -ProductName $productName -ProductVersion $productVersion -Persistence 'not-installed' `
+        -Detail 'Google Chrome 137+ ignores --load-extension in branded release builds. No browser process changed. Use chrome://extensions Developer Mode > Load unpacked for this normal profile, or choose an isolated Chromium/Chrome for Testing profile for automated loading.'
+    if ($PlanOnly) {
+        exit 0
+    }
+    exit 5
+}
+
 if ($PlanOnly) {
     Write-Result -State 'plan-only' -WasRunning $wasRunning -ResolvedExtension $resolvedExtension `
-        -ResolvedChrome $resolvedChrome -LaunchArguments $arguments `
+        -ResolvedChrome $resolvedChrome -LaunchArguments $arguments -ProductName $productName `
+        -ProductVersion $productVersion `
         -Detail 'No browser process changed.'
     exit 0
 }
 
 if (-not $wasRunning -and -not $LaunchIfClosed) {
     Write-Result -State 'staged-browser-was-closed' -WasRunning $false -ResolvedExtension $resolvedExtension `
-        -ResolvedChrome $resolvedChrome -LaunchArguments $arguments `
+        -ResolvedChrome $resolvedChrome -LaunchArguments $arguments -ProductName $productName `
+        -ProductVersion $productVersion `
         -Detail 'Chrome was closed, so Addonry did not launch it unexpectedly. Run helper with -LaunchIfClosed or start Chrome with reported arguments.'
     exit 0
 }
 
 if ($wasRunning -and -not $AuthorizedRestart) {
     Write-Result -State 'blocked-restart-not-authorized' -WasRunning $true -ResolvedExtension $resolvedExtension `
-        -ResolvedChrome $resolvedChrome -LaunchArguments $arguments `
+        -ResolvedChrome $resolvedChrome -LaunchArguments $arguments -ProductName $productName `
+        -ProductVersion $productVersion `
         -Detail 'Chrome is running. Explicit -AuthorizedRestart is required before closing windows.'
     exit 2
 }
@@ -176,7 +201,8 @@ if ($wasRunning) {
 
     if ($remainingProcesses.Count -gt 0) {
         Write-Result -State 'blocked-chrome-did-not-exit' -WasRunning $true -ResolvedExtension $resolvedExtension `
-            -ResolvedChrome $resolvedChrome -LaunchArguments $arguments `
+            -ResolvedChrome $resolvedChrome -LaunchArguments $arguments -ProductName $productName `
+            -ProductVersion $productVersion `
             -Detail 'Chrome did not exit after graceful window close. No force-kill was attempted. Close remaining Chrome/background process, then retry.'
         exit 3
     }
@@ -202,11 +228,13 @@ do {
 
 if (-not $flagObserved) {
     Write-Result -State 'launched-load-flag-unconfirmed' -WasRunning $wasRunning -ResolvedExtension $resolvedExtension `
-        -ResolvedChrome $resolvedChrome -LaunchArguments $arguments `
+        -ResolvedChrome $resolvedChrome -LaunchArguments $arguments -ProductName $productName `
+        -ProductVersion $productVersion `
         -Detail 'Chrome launched, but process command line did not confirm extension load flag. Verify in Chrome before claiming installed.'
     exit 4
 }
 
-Write-Result -State 'startup-scoped-load-confirmed' -WasRunning $wasRunning -ResolvedExtension $resolvedExtension `
-    -ResolvedChrome $resolvedChrome -LaunchArguments $arguments `
-    -Detail 'Chrome process command line confirms unpacked extension startup flag. Run browser-level extension smoke before claiming installed and verified.'
+Write-Result -State 'load-flag-observed-browser-verification-required' -WasRunning $wasRunning `
+    -ResolvedExtension $resolvedExtension -ResolvedChrome $resolvedChrome -LaunchArguments $arguments `
+    -ProductName $productName -ProductVersion $productVersion `
+    -Detail 'Browser process command line contains extension load flag. This is not installation proof. Verify extension ID, enabled state, source path, and representative behavior through browser-level tooling before claiming installed.'

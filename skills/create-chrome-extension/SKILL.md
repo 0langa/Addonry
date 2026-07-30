@@ -22,9 +22,9 @@ Finish with all applicable outcomes:
 3. Static validation and logic tests pass.
 4. Task-specific E2E scenario passes in real Chrome with extension loaded.
 5. Chrome DevTools MCP inspection shows expected page behavior and no unexplained console or network errors.
-6. Extension is loaded into user's Chrome and pinned when host capabilities permit it.
-7. When user authorizes browser restart, use guarded restart helper to load extension into normal Chrome with session restore requested, then verify loaded copy.
-8. If neither guarded restart nor supported UI automation can finish installation, leave one exact `Load unpacked` action, wait for confirmation when user is present, then run final smoke.
+6. Extension is loaded into user's chosen browser profile and pinned when host capabilities permit it.
+7. For Google Chrome 137+, use supported `chrome://extensions` **Load unpacked** flow for normal-profile persistence. Never treat `--load-extension` as supported there.
+8. If protected browser UI prevents automated installation, leave one exact `Load unpacked` action, wait for confirmation when user is present, then run final smoke.
 
 Generated extensions stay untracked and unpublished. Do not initialize Git, add a remote, commit, push, or publish generated work unless user explicitly requests that for specific extension.
 
@@ -41,7 +41,7 @@ Ask as many questions as needed, grouped into one concise batch when possible. F
 - storage, export format, and retention;
 - sensitive access such as cookies, downloads, browsing history, or authenticated pages;
 - preferred UI only when visible design matters.
-- whether Addonry may gracefully close and relaunch Chrome once after verification to load/update extension, with session restore requested.
+- whether user wants persistent normal Chrome installation, accepting one protected **Load unpacked** action when required, or a separately automated Chromium/Chrome for Testing profile.
 
 Do not ask user to choose service worker vs content script, JavaScript vs TypeScript, permission names, testing framework, or folder layout. Infer those from scope.
 
@@ -163,7 +163,11 @@ Distinguish deterministic harness pass from MCP live inspection. Both are eviden
 
 ## Install and final smoke
 
-Read [installation.md](references/installation.md). Prefer authorized guarded restart for hands-off personal installation/update:
+Read [installation.md](references/installation.md). Detect browser product and major version before choosing install path.
+
+For branded Google Chrome 137+, command-line `--load-extension` is unsupported. Normal-profile installation requires Chrome's supported `chrome://extensions` **Developer Mode** > **Load unpacked** flow. Use supported host UI automation when permitted. If protected browser UI or file chooser requires user action, report one exact action and directory. Do not restart Chrome: restarting cannot install extension.
+
+For isolated Chromium, Chrome for Testing, or a branded Chrome version where current official behavior still supports command-line loading, guarded helper may be used:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass `
@@ -172,11 +176,9 @@ powershell -NoProfile -ExecutionPolicy Bypass `
   -AuthorizedRestart
 ```
 
-Resolve helper relative to loaded skill directory. Pass `-ProfileDirectory "<profile folder>"` only when intended normal profile is known. Pass `-LaunchIfClosed` only when user explicitly authorized launching a closed Chrome. Helper refuses volatile paths, requires explicit restart authorization when Chrome runs, uses `CloseMainWindow()`, never force-kills, requests `--restore-last-session`, and confirms process launch flag. If Chrome does not exit gracefully, stop and report blocker.
+Resolve helper relative to loaded skill directory. Run `-PlanOnly` first. `blocked-branded-chrome-load-extension-unsupported` means no browser process changed and normal Chrome installation is still pending. Never override Chrome feature controls to restore obsolete command-line behavior. For a supported browser, pass `-ProfileDirectory "<profile folder>"` only when intended profile is known and `-LaunchIfClosed` only after explicit authorization. Helper uses graceful `CloseMainWindow()`, never force-kills, requests session restore, and checks launch flag.
 
-Before authorized restart, use available Chrome tools to check for visible risk such as active downloads or calls. Warn that unsaved forms, active calls, and download continuity cannot be guaranteed. Give countdown. When Chrome was closed, stage extension and do not open Chrome unexpectedly unless user explicitly authorized that too.
-
-Command-line load is `startup-scoped-load-confirmed`, not proof of permanent profile installation. Keep launching that Chrome session with same `--load-extension` path, or use supported `chrome://extensions` UI automation/manual **Load unpacked** once for persistent profile installation. Chrome protects extension-management UI and file chooser. Do not bypass protection with profile database edits, registry force-install policy, internal private APIs, or copying files into Chrome installation/profile extension folders.
+A launch flag is not installation proof. Claim installed only after browser-level inspection confirms extension ID, enabled state, durable source path, and representative behavior. Chrome protects extension-management UI and file chooser. Do not bypass protection with profile database edits, registry force-install policy, private APIs, security-feature disabling, or copying files into Chrome installation/profile extension folders.
 
 After load:
 
@@ -186,7 +188,7 @@ After load:
 4. Execute user's representative flow in installed copy.
 5. Recheck extension errors, page console, and expected result.
 
-For updates, keep same durable directory. Authorized restart reloads command-line copy without reinstalling. UI-installed unpacked copy may instead use extension-card reload plus target-tab reload.
+For updates, keep same durable directory. UI-installed unpacked copy uses extension-card reload plus target-tab reload. Supported isolated command-line test profiles may be relaunched, but remain separate from persistent normal Chrome.
 
 ## Autonomy and escalation
 
@@ -196,7 +198,7 @@ Pause only when:
 
 - user-visible behavior has multiple materially different interpretations;
 - action would expose or overwrite sensitive browser data;
-- Chrome restart was not authorized, graceful close failed, or browser activity makes restart unsafe;
+- protected normal-profile extension UI requires user action, or a supported isolated-browser restart was not authorized;
 - target needs authentication unavailable in isolated browser;
 - required host permission or protected UI needs user action;
 - request crosses complexity or safety boundary;

@@ -31,7 +31,7 @@ Generated extensions live in durable personal storage outside provider caches. O
 
 - `skills/create-chrome-extension/`: intake, architecture, security, testing, and installation workflow.
 - `addonry-chrome-devtools`: pinned Chrome DevTools MCP runtime with usage statistics disabled and an isolated Chrome profile by default.
-- Deterministic helpers: durable extension scaffold, icon generation, static validation, real-Chrome Puppeteer verification, and guarded normal-Chrome restart/load.
+- Deterministic helpers: durable extension scaffold, icon generation, static validation, real-Chrome Puppeteer verification, and fail-closed browser load preflight.
 - Provider manifests generated from `forge.yaml` by Plugin Forge.
 
 ## Development checks
@@ -44,7 +44,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-chrome-devtool
 node scripts/smoke_chrome_devtools_mcp.cjs
 ```
 
-Guarded restart helper requires explicit `-AuthorizedRestart` while Chrome runs. It gracefully closes matching Chrome windows, never force-kills, requests session restore, and loads extension from durable path. When Chrome was already closed, it leaves extension staged unless `-LaunchIfClosed` was explicitly authorized. Command-line load remains startup-scoped; Addonry reports that distinction.
+Official Google Chrome 137+ ignores `--load-extension`. Addonry therefore uses Chrome's supported **Developer Mode** > **Load unpacked** flow for persistent normal-profile installation. Protected browser UI may require one user directory selection. Guarded helper refuses unsupported branded Chrome before changing any process; supported isolated Chromium/Chrome for Testing flows still require browser-level verification.
 
 Large reusable runtime data and npm caches use mounted `agent-devstorage`: `fast-primary` first, then `bulk-secondary`, under `shared-cache\Addonry\cache`. Source stays in this repository. Without a participating drive, runtime falls back to `%LOCALAPPDATA%\Addonry\runtime`.
 

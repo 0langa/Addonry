@@ -27,8 +27,9 @@ Use only relevant questions:
 - Does it need logged-in state, cookies, downloads, clipboard, history, or broad tab access?
 - What visible feedback confirms success or failure?
 - Which representative example can become E2E fixture?
-- May Addonry gracefully close and relaunch Chrome once to load/update extension after verification?
-- If Chrome is currently closed, may Addonry launch it, or should extension remain staged?
+- Is target persistent normal Google Chrome, or a separate automated Chromium/Chrome for Testing profile?
+- For normal Chrome, can user perform one protected **Load unpacked** directory selection if host automation cannot?
+- For a supported isolated browser only: may Addonry gracefully relaunch it, and may it launch when currently closed?
 
 ## Default product choices
 
@@ -37,6 +38,7 @@ Use only relevant questions:
 - Generated in durable personal storage outside provider/plugin cache.
 - Preferred Windows root: `%USERPROFILE%\source\repos\chrome-extensions`; fallback: `%USERPROFILE%\chrome-extensions`.
 - Current stable Chrome on Windows.
+- Persistent normal Chrome is preferred; Chrome 137+ may require one user **Load unpacked** action.
 - Toolbar action for on-demand utilities.
 - Current tab only unless user names broader scope.
 - Preserve order and avoid duplicates for extracted items.
@@ -53,7 +55,7 @@ Edge behavior:
 Output/storage:
 Sensitive access:
 Install target:
-Restart authorization:
+Protected install action:
 Done when:
 ```
 

@@ -19,9 +19,13 @@ Checked 2026-07-30. Re-open relevant primary page whenever current behavior matt
 
 ## Chromium startup behavior
 
+- Chrome Extensions announcement: official Chrome 137+ removes `--load-extension`: https://groups.google.com/a/chromium.org/g/chromium-extensions/c/1-g8EFx2BBY
+- Chromium feature definition for branded Chrome: https://chromium.googlesource.com/chromium/src/+/refs/heads/main/extensions/common/extension_features.cc
 - Startup browser creator and `--restore-last-session`: https://chromium.googlesource.com/chromium/src/+/refs/heads/main/chrome/browser/ui/startup/startup_browser_creator.cc
+- Chrome 136 remote-debugging restrictions for default data directory: https://developer.chrome.com/blog/remote-debugging-port
+- DevTools Protocol Extensions domain (`loadUnpacked`, testing-only constraints): https://chromedevtools.github.io/devtools-protocol/tot/Extensions/
 
-Treat command-line extension loading as startup-scoped evidence. Do not claim permanent profile installation from process flags alone.
+For branded Google Chrome 137+, do not use `--load-extension`. Do not disable feature gate. Chromium and Chrome for Testing retain flag for development. Treat supported-browser process flags as launch evidence only, never registration or permanent installation proof.
 
 ## Chrome DevTools MCP
 

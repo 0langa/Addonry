@@ -99,7 +99,14 @@ def main() -> int:
         helper_text = restart_helper.read_text(encoding="utf-8")
         if "Stop-Process" in helper_text or "taskkill" in helper_text.lower():
             errors.append("Chrome restart helper contains force-termination primitive")
-        for required_token in ("CloseMainWindow", "--load-extension=", "--restore-last-session", "AuthorizedRestart"):
+        for required_token in (
+            "CloseMainWindow",
+            "--load-extension=",
+            "--restore-last-session",
+            "AuthorizedRestart",
+            "blocked-branded-chrome-load-extension-unsupported",
+            "Google Chrome 137+ ignores --load-extension",
+        ):
             if required_token not in helper_text:
                 errors.append(f"Chrome restart helper missing safety behavior: {required_token}")
 

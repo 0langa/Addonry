@@ -124,7 +124,7 @@ class ValidatorTests(unittest.TestCase):
 
 @unittest.skipUnless(sys.platform == "win32", "PowerShell helper is Windows-specific")
 class ChromeRestartHelperTests(unittest.TestCase):
-    def test_plan_only_is_non_mutating_and_reports_startup_scope(self) -> None:
+    def test_plan_only_fails_closed_for_unsupported_branded_chrome(self) -> None:
         chrome_candidates = [
             Path(os.environ.get("PROGRAMFILES", "")) / "Google/Chrome/Application/chrome.exe",
             Path(os.environ.get("PROGRAMFILES(X86)", "")) / "Google/Chrome/Application/chrome.exe",
@@ -163,10 +163,17 @@ class ChromeRestartHelperTests(unittest.TestCase):
             )
             self.assertEqual(result.returncode, 0, result.stderr)
             report = json.loads(result.stdout)
-            self.assertEqual(report["state"], "plan-only")
-            self.assertEqual(report["persistence"], "startup-scoped")
-            self.assertTrue(report["sessionRestoreRequested"])
-            self.assertIn("--restore-last-session", report["launchArguments"])
+            major = int(report["browserVersion"].split(".", 1)[0])
+            if report["browserProduct"] == "Google Chrome" and major >= 137:
+                self.assertEqual(report["state"], "blocked-branded-chrome-load-extension-unsupported")
+                self.assertEqual(report["persistence"], "not-installed")
+                self.assertFalse(report["sessionRestoreRequested"])
+                self.assertEqual(report["launchArguments"], [])
+            else:
+                self.assertEqual(report["state"], "plan-only")
+                self.assertEqual(report["persistence"], "unknown-until-browser-verified")
+                self.assertTrue(report["sessionRestoreRequested"])
+                self.assertIn("--restore-last-session", report["launchArguments"])
 
 
 if __name__ == "__main__":
