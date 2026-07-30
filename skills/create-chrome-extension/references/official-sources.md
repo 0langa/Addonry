@@ -1,6 +1,6 @@
 # Official Sources
 
-Checked 2026-07-29. Re-open relevant primary page whenever current behavior matters.
+Checked 2026-07-30. Re-open relevant primary page whenever current behavior matters.
 
 ## Chrome Extensions
 
@@ -12,7 +12,16 @@ Checked 2026-07-29. Re-open relevant primary page whenever current behavior matt
 - Security: https://developer.chrome.com/docs/extensions/develop/security-privacy/stay-secure
 - E2E testing: https://developer.chrome.com/docs/extensions/how-to/test/end-to-end-testing
 - Puppeteer extension testing: https://developer.chrome.com/docs/extensions/how-to/test/puppeteer
+- ChromeDriver load-extension option: https://developer.chrome.com/docs/chromedriver/extensions
+- Self-hosting and installation restrictions: https://developer.chrome.com/docs/extensions/how-to/distribute
+- Windows external installation restrictions: https://developer.chrome.com/docs/extensions/how-to/distribute/install-extensions
 - API reference: https://developer.chrome.com/docs/extensions/reference/api
+
+## Chromium startup behavior
+
+- Startup browser creator and `--restore-last-session`: https://chromium.googlesource.com/chromium/src/+/refs/heads/main/chrome/browser/ui/startup/startup_browser_creator.cc
+
+Treat command-line extension loading as startup-scoped evidence. Do not claim permanent profile installation from process flags alone.
 
 ## Chrome DevTools MCP
 

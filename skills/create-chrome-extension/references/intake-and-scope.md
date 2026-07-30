@@ -27,12 +27,15 @@ Use only relevant questions:
 - Does it need logged-in state, cookies, downloads, clipboard, history, or broad tab access?
 - What visible feedback confirms success or failure?
 - Which representative example can become E2E fixture?
+- May Addonry gracefully close and relaunch Chrome once to load/update extension after verification?
+- If Chrome is currently closed, may Addonry launch it, or should extension remain staged?
 
 ## Default product choices
 
 - Personal local use only.
 - No Web Store or GitHub publication.
-- Generated under Addonry `generated/<slug>` and ignored by Git.
+- Generated in durable personal storage outside provider/plugin cache.
+- Preferred Windows root: `%USERPROFILE%\source\repos\chrome-extensions`; fallback: `%USERPROFILE%\chrome-extensions`.
 - Current stable Chrome on Windows.
 - Toolbar action for on-demand utilities.
 - Current tab only unless user names broader scope.
@@ -50,6 +53,7 @@ Edge behavior:
 Output/storage:
 Sensitive access:
 Install target:
+Restart authorization:
 Done when:
 ```
 

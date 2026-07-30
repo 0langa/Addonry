@@ -33,6 +33,13 @@ jobs:
             [ref]$errors
           ) | Out-Null
           if ($errors.Count) { throw ($errors | Out-String) }
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path skills/create-chrome-extension/scripts/restart-chrome-with-extension.ps1),
+            [ref]$null,
+            [ref]$errors
+          ) | Out-Null
+          if ($errors.Count) { throw ($errors | Out-String) }
       - name: Pinned Chrome DevTools MCP startup
         shell: pwsh
         run: |

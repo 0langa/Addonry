@@ -17,7 +17,7 @@ Hard manual-only flags intentionally prevent plain prose such as `Use Addonry ..
 
 Good fits include page-specific helpers, link extraction, one-click tab actions, formatters, lightweight download helpers, and narrowly scoped cookie import/export utilities. Addonry downscopes or refuses password managers, stealth or policy bypasses, credential harvesting, and other work whose security or complexity exceeds a personal convenience extension.
 
-Generated extensions live under `generated/<slug>/`. That directory is ignored by Git: generated projects remain local and are never committed or published unless explicitly requested.
+Generated extensions live in durable personal storage outside provider caches. On Windows, Addonry prefers `%USERPROFILE%\source\repos\chrome-extensions\<slug>` when `source\repos` exists, otherwise `%USERPROFILE%\chrome-extensions\<slug>`. `ADDONRY_OUTPUT_ROOT` overrides default. Generated projects remain local and are never committed or published unless explicitly requested.
 
 ## Manual-only contract
 
@@ -31,7 +31,7 @@ Generated extensions live under `generated/<slug>/`. That directory is ignored b
 
 - `skills/create-chrome-extension/`: intake, architecture, security, testing, and installation workflow.
 - `addonry-chrome-devtools`: pinned Chrome DevTools MCP runtime with usage statistics disabled and an isolated Chrome profile by default.
-- Deterministic helpers: extension scaffold, icon generation, static validation, and real-Chrome Puppeteer verification.
+- Deterministic helpers: durable extension scaffold, icon generation, static validation, real-Chrome Puppeteer verification, and guarded normal-Chrome restart/load.
 - Provider manifests generated from `forge.yaml` by Plugin Forge.
 
 ## Development checks
@@ -43,6 +43,8 @@ node --check skills/create-chrome-extension/scripts/verify_extension.cjs
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-chrome-devtools-mcp.ps1 -SelfTest
 node scripts/smoke_chrome_devtools_mcp.cjs
 ```
+
+Guarded restart helper requires explicit `-AuthorizedRestart` while Chrome runs. It gracefully closes matching Chrome windows, never force-kills, requests session restore, and loads extension from durable path. When Chrome was already closed, it leaves extension staged unless `-LaunchIfClosed` was explicitly authorized. Command-line load remains startup-scoped; Addonry reports that distinction.
 
 Large reusable runtime data and npm caches use mounted `agent-devstorage`: `fast-primary` first, then `bulk-secondary`, under `shared-cache\Addonry\cache`. Source stays in this repository. Without a participating drive, runtime falls back to `%LOCALAPPDATA%\Addonry\runtime`.
 

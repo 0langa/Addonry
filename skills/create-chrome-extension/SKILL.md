@@ -17,13 +17,14 @@ Once active, use bundled `addonry-chrome-devtools` MCP tools throughout browser-
 
 Finish with all applicable outcomes:
 
-1. Extension source exists under Addonry plugin root's `generated\<slug>` unless `ADDONRY_OUTPUT_ROOT` overrides it.
+1. Extension source exists in durable personal storage outside provider/plugin caches. Default is `%USERPROFILE%\source\repos\chrome-extensions\<slug>` when `source\repos` exists, otherwise `%USERPROFILE%\chrome-extensions\<slug>`. `ADDONRY_OUTPUT_ROOT` overrides it.
 2. Manifest V3 implementation matches agreed behavior with least required permissions.
 3. Static validation and logic tests pass.
 4. Task-specific E2E scenario passes in real Chrome with extension loaded.
 5. Chrome DevTools MCP inspection shows expected page behavior and no unexplained console or network errors.
 6. Extension is loaded into user's Chrome and pinned when host capabilities permit it.
-7. If protected Chrome UI blocks automation, leave one exact `Load unpacked` action, wait for confirmation when user is present, then run final smoke.
+7. When user authorizes browser restart, use guarded restart helper to load extension into normal Chrome with session restore requested, then verify loaded copy.
+8. If neither guarded restart nor supported UI automation can finish installation, leave one exact `Load unpacked` action, wait for confirmation when user is present, then run final smoke.
 
 Generated extensions stay untracked and unpublished. Do not initialize Git, add a remote, commit, push, or publish generated work unless user explicitly requests that for specific extension.
 
@@ -40,6 +41,7 @@ Ask as many questions as needed, grouped into one concise batch when possible. F
 - storage, export format, and retention;
 - sensitive access such as cookies, downloads, browsing history, or authenticated pages;
 - preferred UI only when visible design matters.
+- whether Addonry may gracefully close and relaunch Chrome once after verification to load/update extension, with session restore requested.
 
 Do not ask user to choose service worker vs content script, JavaScript vs TypeScript, permission names, testing framework, or folder layout. Infer those from scope.
 
@@ -94,7 +96,7 @@ python skills/create-chrome-extension/scripts/scaffold_extension.py `
   --description "<single-purpose description>"
 ```
 
-If invoking installed plugin from cache, resolve script relative to loaded skill directory. Scaffolder defaults to personal Addonry `generated` directory and refuses existing targets. Never overwrite existing extension directory automatically; inspect and resume it or choose new slug.
+If invoking installed plugin from cache, resolve script relative to loaded skill directory. Scaffolder writes to durable personal storage outside plugin cache and refuses existing targets. Never overwrite existing extension directory automatically; inspect and resume it or choose new slug. Never place active extension source under versioned provider cache, temporary directory, build output, or another cleanup-prone path.
 
 Scaffold is starting point, not final design. Remove unused pages and permissions, preserve verification metadata, and adapt task-specific files. Keep generated source self-contained and readable.
 
@@ -161,9 +163,20 @@ Distinguish deterministic harness pass from MCP live inspection. Both are eviden
 
 ## Install and final smoke
 
-Read [installation.md](references/installation.md). Prefer host's user-Chrome control surface for `chrome://extensions` UI when available. Otherwise open extensions page and provide exact generated directory for `Load unpacked`.
+Read [installation.md](references/installation.md). Prefer authorized guarded restart for hands-off personal installation/update:
 
-Chrome protects extension-management UI and file chooser. Do not bypass protection with profile database edits, registry force-install policy, or internal private APIs. If one manual selection remains, say so plainly; implementation can be verified while installation remains pending.
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass `
+  -File skills/create-chrome-extension/scripts/restart-chrome-with-extension.ps1 `
+  -ExtensionPath <durable-extension-path> `
+  -AuthorizedRestart
+```
+
+Resolve helper relative to loaded skill directory. Pass `-ProfileDirectory "<profile folder>"` only when intended normal profile is known. Pass `-LaunchIfClosed` only when user explicitly authorized launching a closed Chrome. Helper refuses volatile paths, requires explicit restart authorization when Chrome runs, uses `CloseMainWindow()`, never force-kills, requests `--restore-last-session`, and confirms process launch flag. If Chrome does not exit gracefully, stop and report blocker.
+
+Before authorized restart, use available Chrome tools to check for visible risk such as active downloads or calls. Warn that unsaved forms, active calls, and download continuity cannot be guaranteed. Give countdown. When Chrome was closed, stage extension and do not open Chrome unexpectedly unless user explicitly authorized that too.
+
+Command-line load is `startup-scoped-load-confirmed`, not proof of permanent profile installation. Keep launching that Chrome session with same `--load-extension` path, or use supported `chrome://extensions` UI automation/manual **Load unpacked** once for persistent profile installation. Chrome protects extension-management UI and file chooser. Do not bypass protection with profile database edits, registry force-install policy, internal private APIs, or copying files into Chrome installation/profile extension folders.
 
 After load:
 
@@ -173,7 +186,7 @@ After load:
 4. Execute user's representative flow in installed copy.
 5. Recheck extension errors, page console, and expected result.
 
-Chrome restart is normally unnecessary for unpacked extension. Ask for restart only when current evidence requires it.
+For updates, keep same durable directory. Authorized restart reloads command-line copy without reinstalling. UI-installed unpacked copy may instead use extension-card reload plus target-tab reload.
 
 ## Autonomy and escalation
 
@@ -183,6 +196,7 @@ Pause only when:
 
 - user-visible behavior has multiple materially different interpretations;
 - action would expose or overwrite sensitive browser data;
+- Chrome restart was not authorized, graceful close failed, or browser activity makes restart unsafe;
 - target needs authentication unavailable in isolated browser;
 - required host permission or protected UI needs user action;
 - request crosses complexity or safety boundary;

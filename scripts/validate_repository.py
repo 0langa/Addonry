@@ -18,6 +18,7 @@ REQUIRED_FILES = (
     ".codex-mcp.json",
     "skills/create-chrome-extension/SKILL.md",
     "skills/create-chrome-extension/agents/openai.yaml",
+    "skills/create-chrome-extension/scripts/restart-chrome-with-extension.ps1",
     "commands/create-chrome-extension.md",
     "scripts/start-chrome-devtools-mcp.ps1",
     "scripts/smoke_chrome_devtools_mcp.cjs",
@@ -92,6 +93,15 @@ def main() -> int:
             errors.append("Chrome DevTools MCP runtime is not immutably pinned")
         if "CHROME_DEVTOOLS_MCP_NO_USAGE_STATISTICS" not in wrapper_text:
             errors.append("Chrome DevTools MCP usage-statistics opt-out missing")
+
+    restart_helper = ROOT / "skills/create-chrome-extension/scripts/restart-chrome-with-extension.ps1"
+    if restart_helper.is_file():
+        helper_text = restart_helper.read_text(encoding="utf-8")
+        if "Stop-Process" in helper_text or "taskkill" in helper_text.lower():
+            errors.append("Chrome restart helper contains force-termination primitive")
+        for required_token in ("CloseMainWindow", "--load-extension=", "--restore-last-session", "AuthorizedRestart"):
+            if required_token not in helper_text:
+                errors.append(f"Chrome restart helper missing safety behavior: {required_token}")
 
     gitignore = (ROOT / ".gitignore").read_text(encoding="utf-8")
     if not re.search(r"(?m)^generated/$", gitignore):
