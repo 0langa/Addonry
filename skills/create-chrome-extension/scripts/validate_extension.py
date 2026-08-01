@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import re
 from dataclasses import asdict, dataclass
@@ -15,10 +16,17 @@ INLINE_SCRIPT_RE = re.compile(r"<script(?![^>]*\bsrc\s*=)[^>]*>\s*\S", re.IGNORE
 REMOTE_SCRIPT_RE = re.compile(r"<script[^>]+\bsrc\s*=\s*['\"]https?://", re.IGNORECASE)
 INLINE_HANDLER_RE = re.compile(r"\son[a-z]+\s*=", re.IGNORECASE)
 # Match direct dynamic-code calls, not Puppeteer helpers such as `$eval(...)`.
-EVAL_RE = re.compile(r"(?<![$\w])(?:eval\s*\(|new\s+Function\s*\()")
+EVAL_RE = re.compile(r"(?<![$\w])(?:eval|Function)\s*\(")
 REMOTE_CODE_RE = re.compile(r"(?:import\s*\(|importScripts\s*\()[^\n]{0,200}https?://", re.IGNORECASE)
-SECRET_RE = re.compile(r"(?i)(api[_-]?key|access[_-]?token|client[_-]?secret|password)\s*[:=]\s*['\"][^'\"]{8,}")
+STATIC_REMOTE_IMPORT_RE = re.compile(
+    r"(?:^|[;\n])\s*(?:import|export)\s+(?:[^;\n]*?\s+from\s+)?['\"]https?://",
+    re.IGNORECASE,
+)
+SECRET_RE = re.compile(r"(?i)(api[_-]?key|access[_-]?token|client[_-]?secret|password)['\"]?\s*[:=]\s*['\"][^'\"]{8,}")
 HIGH_RISK_PERMISSIONS = {"cookies", "debugger", "history", "management", "nativeMessaging", "proxy", "tabs", "webRequest", "webRequestBlocking"}
+BROAD_HOST_PATTERNS = {"<all_urls>", "*://*/*", "http://*/*", "https://*/*"}
+TEXT_SOURCE_SUFFIXES = {".js", ".mjs", ".cjs", ".html", ".htm", ".json", ".css", ".txt", ".yaml", ".yml"}
+IGNORED_DIGEST_DIRECTORIES = {".addonry", ".git", "node_modules"}
 
 
 @dataclass(frozen=True)
@@ -27,6 +35,23 @@ class Finding:
     code: str
     message: str
     path: str | None = None
+
+
+def source_digest(root: Path) -> str:
+    """Match verifier digest so stale browser evidence can be rejected."""
+    root = root.expanduser().resolve()
+    digest = hashlib.sha256()
+    files = sorted(
+        path
+        for path in root.rglob("*")
+        if path.is_file() and not any(part in IGNORED_DIGEST_DIRECTORIES for part in path.relative_to(root).parts)
+    )
+    for path in files:
+        digest.update(path.relative_to(root).as_posix().encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(path.read_bytes())
+        digest.update(b"\0")
+    return digest.hexdigest()
 
 
 def _manifest_paths(manifest: dict[str, Any]) -> Iterable[str]:
@@ -59,7 +84,32 @@ def _manifest_paths(manifest: dict[str, Any]) -> Iterable[str]:
     if isinstance(side_panel, dict) and isinstance(side_panel.get("default_path"), str):
         yield side_panel["default_path"]
 
-    for script in manifest.get("content_scripts", []):
+    overrides = manifest.get("chrome_url_overrides", {})
+    if isinstance(overrides, dict):
+        yield from (value for value in overrides.values() if isinstance(value, str))
+
+    sandbox = manifest.get("sandbox", {})
+    if isinstance(sandbox, dict):
+        pages = sandbox.get("pages", [])
+        if isinstance(pages, list):
+            yield from (value for value in pages if isinstance(value, str))
+
+    web_resources = manifest.get("web_accessible_resources", [])
+    for resource in (web_resources if isinstance(web_resources, list) else []):
+        if isinstance(resource, dict):
+            values = resource.get("resources", [])
+            if isinstance(values, list):
+                yield from (value for value in values if isinstance(value, str))
+
+    rules = manifest.get("declarative_net_request", {})
+    if isinstance(rules, dict):
+        rule_resources = rules.get("rule_resources", [])
+        for resource in (rule_resources if isinstance(rule_resources, list) else []):
+            if isinstance(resource, dict) and isinstance(resource.get("path"), str):
+                yield resource["path"]
+
+    content_scripts = manifest.get("content_scripts", [])
+    for script in (content_scripts if isinstance(content_scripts, list) else []):
         if isinstance(script, dict):
             for key in ("js", "css"):
                 values = script.get(key, [])
@@ -67,8 +117,9 @@ def _manifest_paths(manifest: dict[str, Any]) -> Iterable[str]:
                     yield from (value for value in values if isinstance(value, str))
 
 
-def validate_extension(root: Path, *, release_ready: bool = False) -> list[Finding]:
+def validate_extension(root: Path, *, release_ready: bool = False, final_ready: bool = False) -> list[Finding]:
     root = root.expanduser().resolve()
+    release_ready = release_ready or final_ready
     findings: list[Finding] = []
     manifest_path = root / "manifest.json"
     if not manifest_path.is_file():
@@ -101,12 +152,41 @@ def validate_extension(root: Path, *, release_ready: bool = False) -> list[Findi
         elif "*" not in referenced and not candidate.is_file():
             findings.append(Finding("error", "referenced-file-missing", f"manifest references missing file: {referenced}", "manifest.json"))
 
-    permissions = set(value for value in manifest.get("permissions", []) if isinstance(value, str))
-    host_permissions = set(value for value in manifest.get("host_permissions", []) if isinstance(value, str))
+    permission_fields = ("permissions", "optional_permissions", "host_permissions", "optional_host_permissions")
+    for field in permission_fields:
+        value = manifest.get(field, [])
+        if not isinstance(value, list) or any(not isinstance(item, str) for item in value):
+            findings.append(Finding("error", "invalid-permission-list", f"{field} must be an array of strings", "manifest.json"))
+
+    for field in ("content_scripts", "web_accessible_resources"):
+        if field in manifest and not isinstance(manifest[field], list):
+            findings.append(Finding("error", "invalid-manifest-list", f"{field} must be an array", "manifest.json"))
+
+    permissions = {
+        value
+        for key in ("permissions", "optional_permissions")
+        for value in (manifest.get(key, []) if isinstance(manifest.get(key, []), list) else [])
+        if isinstance(value, str)
+    }
+    host_patterns = {
+        value
+        for key in ("host_permissions", "optional_host_permissions")
+        for value in (manifest.get(key, []) if isinstance(manifest.get(key, []), list) else [])
+        if isinstance(value, str)
+    }
+    content_scripts = manifest.get("content_scripts", [])
+    for script in (content_scripts if isinstance(content_scripts, list) else []):
+        if isinstance(script, dict):
+            matches = script.get("matches", [])
+            if not isinstance(matches, list) or any(not isinstance(item, str) for item in matches):
+                findings.append(Finding("error", "invalid-content-script-matches", "content_scripts.matches must be an array of strings", "manifest.json"))
+            else:
+                host_patterns.update(matches)
+
     for permission in sorted(permissions & HIGH_RISK_PERMISSIONS):
         findings.append(Finding("warning", "high-risk-permission", f"permission requires explicit acceptance rationale: {permission}", "manifest.json"))
-    if "<all_urls>" in host_permissions:
-        findings.append(Finding("warning", "broad-host-access", "<all_urls> requires explicit scope rationale", "manifest.json"))
+    for pattern in sorted(host_patterns & BROAD_HOST_PATTERNS):
+        findings.append(Finding("warning", "broad-host-access", f"{pattern} requires explicit scope rationale", "manifest.json"))
 
     csp = manifest.get("content_security_policy")
     csp_text = json.dumps(csp) if csp is not None else ""
@@ -119,7 +199,7 @@ def validate_extension(root: Path, *, release_ready: bool = False) -> list[Findi
         if not path.is_file() or any(part in {"node_modules", ".git"} for part in path.parts):
             continue
         suffix = path.suffix.lower()
-        if suffix not in {".js", ".mjs", ".cjs", ".html", ".htm"}:
+        if suffix not in TEXT_SOURCE_SUFFIXES and path.name != ".env":
             continue
         relative = path.relative_to(root).as_posix()
         try:
@@ -134,10 +214,10 @@ def validate_extension(root: Path, *, release_ready: bool = False) -> list[Findi
                 findings.append(Finding("error", "inline-script", "inline executable script violates extension CSP", relative))
             if INLINE_HANDLER_RE.search(text):
                 findings.append(Finding("error", "inline-handler", "inline event handlers violate extension CSP", relative))
-        else:
+        elif suffix in {".js", ".mjs", ".cjs"}:
             if EVAL_RE.search(text):
                 findings.append(Finding("error", "dynamic-code", "eval/new Function is forbidden", relative))
-            if REMOTE_CODE_RE.search(text):
+            if REMOTE_CODE_RE.search(text) or STATIC_REMOTE_IMPORT_RE.search(text):
                 findings.append(Finding("error", "remote-code", "remote executable code import is forbidden", relative))
         if SECRET_RE.search(text):
             findings.append(Finding("error", "embedded-secret", "possible embedded credential found", relative))
@@ -165,6 +245,56 @@ def validate_extension(root: Path, *, release_ready: bool = False) -> list[Findi
         scenario_path = root / "tests" / "e2e.cjs"
         if starter_scenario.is_file() and scenario_path.is_file() and scenario_path.read_bytes() == starter_scenario.read_bytes():
             findings.append(Finding("error", "starter-e2e", "tailor tests/e2e.cjs to requested behavior", "tests/e2e.cjs"))
+        if not scenario_path.is_file() or "exports.run" not in scenario_path.read_text(encoding="utf-8"):
+            findings.append(Finding("error", "e2e-contract", "tests/e2e.cjs must export run(context)", "tests/e2e.cjs"))
+
+    if final_ready:
+        verification_path = root / ".addonry" / "verification.json"
+        if not verification_path.is_file():
+            findings.append(Finding("error", "verification-missing", "final-ready validation requires .addonry/verification.json", ".addonry/verification.json"))
+        else:
+            try:
+                verification = json.loads(verification_path.read_text(encoding="utf-8"))
+            except (OSError, UnicodeError, json.JSONDecodeError) as error:
+                findings.append(Finding("error", "verification-invalid", f"verification evidence cannot be parsed: {error}", ".addonry/verification.json"))
+            else:
+                if not isinstance(verification, dict) or verification.get("status") != "passed":
+                    findings.append(Finding("error", "verification-not-passed", "latest real-Chrome verification must have passed", ".addonry/verification.json"))
+                if not isinstance(verification, dict) or verification.get("sourceSha256") != source_digest(root):
+                    findings.append(Finding("error", "verification-stale", "verification digest does not match current extension source", ".addonry/verification.json"))
+                if not isinstance(verification, dict) or verification.get("scenario") == "generic-popup":
+                    findings.append(Finding("error", "verification-generic", "final evidence must use tailored E2E scenario", ".addonry/verification.json"))
+                elif isinstance(verification, dict):
+                    scenario = verification.get("scenario")
+                    expected_scenario = (root / "tests" / "e2e.cjs").resolve()
+                    if not isinstance(scenario, str) or Path(scenario).expanduser().resolve() != expected_scenario:
+                        findings.append(Finding("error", "verification-scenario-mismatch", "verification must use this extension's tests/e2e.cjs", ".addonry/verification.json"))
+                mcp = verification.get("chromeDevtoolsMcp", {}) if isinstance(verification, dict) else {}
+                if not isinstance(mcp, dict) or mcp.get("status") != "passed":
+                    findings.append(Finding("error", "mcp-verification-missing", "Chrome DevTools MCP evidence must have passed", ".addonry/verification.json"))
+                limitations = verification.get("limitations", []) if isinstance(verification, dict) else []
+                if not isinstance(limitations, list) or limitations:
+                    findings.append(Finding("error", "verification-limitations", "resolve E2E limitations before final-ready claim", ".addonry/verification.json"))
+                cleanup_warnings = verification.get("cleanupWarnings", []) if isinstance(verification, dict) else []
+                if not isinstance(cleanup_warnings, list) or cleanup_warnings:
+                    findings.append(Finding("error", "verification-cleanup", "rerun after resolving E2E cleanup warnings", ".addonry/verification.json"))
+                registration = verification.get("extensionRegistration", {}) if isinstance(verification, dict) else {}
+                required_registration = {"id", "name", "version", "path", "enabled"}
+                if not isinstance(registration, dict) or not required_registration <= set(registration) or registration.get("enabled") is not True:
+                    findings.append(Finding("error", "extension-registration-missing", "browser registration evidence is incomplete", ".addonry/verification.json"))
+                elif (
+                    not isinstance(registration.get("id"), str)
+                    or re.fullmatch(r"[a-p]{32}", registration["id"]) is None
+                    or registration.get("name") != manifest.get("name")
+                    or registration.get("version") != manifest.get("version")
+                    or not isinstance(registration.get("path"), str)
+                    or Path(registration["path"]).expanduser().resolve() != root
+                ):
+                    findings.append(Finding("error", "extension-registration-mismatch", "browser registration does not match current extension identity and source path", ".addonry/verification.json"))
+                for field in ("consoleErrors", "pageErrors", "workerErrors"):
+                    errors = verification.get(field, []) if isinstance(verification, dict) else []
+                    if not isinstance(errors, list) or errors:
+                        findings.append(Finding("error", "browser-errors-present", f"verification contains unresolved {field}", ".addonry/verification.json"))
 
     return findings
 
@@ -174,8 +304,9 @@ def main() -> int:
     parser.add_argument("extension_path", type=Path)
     parser.add_argument("--json", action="store_true", dest="as_json")
     parser.add_argument("--release-ready", action="store_true")
+    parser.add_argument("--final-ready", action="store_true")
     args = parser.parse_args()
-    findings = validate_extension(args.extension_path, release_ready=args.release_ready)
+    findings = validate_extension(args.extension_path, release_ready=args.release_ready, final_ready=args.final_ready)
     errors = [finding for finding in findings if finding.level == "error"]
     payload = {
         "extension": str(args.extension_path.expanduser().resolve()),

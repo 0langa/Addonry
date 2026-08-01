@@ -11,6 +11,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $puppeteerVersion = '25.4.0'
+$script:AddonryDevstorageRoot = $null
 
 function Get-AddonryRuntimeRoot {
     if ($env:ADDONRY_RUNTIME_ROOT) {
@@ -37,9 +38,19 @@ function Get-AddonryRuntimeRoot {
     }
     $selected = $candidates | Sort-Object Priority | Select-Object -First 1
     if ($selected) {
+        $script:AddonryDevstorageRoot = $selected.Root
         return Join-Path $selected.Root 'shared-cache\Addonry\cache\runtime'
     }
     return Join-Path $env:LOCALAPPDATA 'Addonry\runtime'
+}
+
+function Write-AddonryRoutingLog([string]$Destination, [string]$Reason) {
+    if (-not $script:AddonryDevstorageRoot) { return }
+    $janitor = Join-Path $script:AddonryDevstorageRoot '_janitor'
+    New-Item -ItemType Directory -Force -Path $janitor | Out-Null
+    $provider = if ($env:CLAUDE_PLUGIN_ROOT) { 'claude' } elseif ($env:KIMI_PLUGIN_ROOT) { 'kimi' } else { 'codex' }
+    $line = "{0} {1} Addonry {2} {3}" -f [DateTimeOffset]::Now.ToString('o'), $provider, $Destination, $Reason
+    Add-Content -LiteralPath (Join-Path $janitor 'routing.log') -Value $line
 }
 
 $extension = [System.IO.Path]::GetFullPath($ExtensionPath)
@@ -60,6 +71,7 @@ if (-not $chrome) {
 $runtimeRoot = Get-AddonryRuntimeRoot
 $packageRoot = Join-Path $runtimeRoot "puppeteer-core-$puppeteerVersion"
 $packageJson = Join-Path $packageRoot 'node_modules\puppeteer-core\package.json'
+$packageEntryPoint = $null
 $npmCache = Join-Path $runtimeRoot 'npm-cache'
 $installLog = Join-Path $runtimeRoot 'puppeteer-core-install.log'
 $profilesRoot = Join-Path $runtimeRoot 'test-profiles'
@@ -67,15 +79,30 @@ New-Item -ItemType Directory -Force -Path $runtimeRoot, $npmCache, $profilesRoot
 
 $installedVersion = $null
 if (Test-Path -LiteralPath $packageJson) {
-    try { $installedVersion = (Get-Content -LiteralPath $packageJson -Raw | ConvertFrom-Json).version } catch { $installedVersion = $null }
+    try {
+        $package = Get-Content -LiteralPath $packageJson -Raw | ConvertFrom-Json
+        $installedVersion = $package.version
+        if ($package.main) {
+            $packageEntryPoint = Join-Path (Split-Path -Parent $packageJson) $package.main
+        }
+    } catch {
+        $installedVersion = $null
+        $packageEntryPoint = $null
+    }
 }
-if ($installedVersion -ne $puppeteerVersion) {
+if ($installedVersion -ne $puppeteerVersion -or -not $packageEntryPoint -or -not (Test-Path -LiteralPath $packageEntryPoint)) {
+    if ($script:AddonryDevstorageRoot) {
+        Write-AddonryRoutingLog -Destination $packageRoot -Reason "puppeteer-core-$puppeteerVersion runtime install"
+    }
+    else {
+        Write-Warning "external devstorage unavailable; using $runtimeRoot"
+    }
     $env:NPM_CONFIG_CACHE = $npmCache
     $npm = Get-Command npm -ErrorAction SilentlyContinue
     if (-not $npm) { throw 'npm is required. Install current Node.js LTS and retry.' }
     $previousErrorActionPreference = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
-    & $npm.Source install --prefix $packageRoot --no-save --omit=dev --ignore-scripts "puppeteer-core@$puppeteerVersion" *> $installLog
+    & $npm.Source install --prefix $packageRoot --no-save --omit=dev --ignore-scripts --no-audit --no-fund "puppeteer-core@$puppeteerVersion" *> $installLog
     $installExitCode = $LASTEXITCODE
     $ErrorActionPreference = $previousErrorActionPreference
     if ($installExitCode -ne 0 -or -not (Test-Path -LiteralPath $packageJson)) {

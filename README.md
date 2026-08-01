@@ -1,6 +1,6 @@
 # Addonry
 
-Addonry is a manual-only plugin that turns a plain-language request into a finished personal Chrome extension. It targets Codex, Claude Code, and Kimi Code from one Forge-managed source.
+Addonry is a manual-only plugin that turns a plain-language request into a tested personal Chrome extension plus truthful installation state. It targets Codex, Claude Code, and Kimi Code from one Forge-managed source.
 
 Invoke Addonry through provider's manual skill syntax, describe browser utility, answer its up-front product questions, then leave implementation decisions to agent. Addonry owns feasibility research, Manifest V3 design, code, permissions, tests, real-Chrome verification, and best-effort installation.
 
@@ -31,7 +31,7 @@ Generated extensions live in durable personal storage outside provider caches. O
 
 - `skills/create-chrome-extension/`: intake, architecture, security, testing, and installation workflow.
 - `addonry-chrome-devtools`: pinned Chrome DevTools MCP runtime with usage statistics disabled and an isolated Chrome profile by default.
-- Deterministic helpers: durable extension scaffold, icon generation, static validation, real-Chrome Puppeteer verification, and fail-closed browser load preflight.
+- Deterministic helpers: durable extension scaffold, icon generation, security/static validation, real-Chrome Puppeteer toolbar-action verification, source-bound final evidence gate, and fail-closed browser load preflight.
 - Provider manifests generated from `forge.yaml` by Plugin Forge.
 
 ## Development checks
@@ -42,11 +42,15 @@ python scripts/validate_repository.py
 node --check skills/create-chrome-extension/scripts/verify_extension.cjs
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-chrome-devtools-mcp.ps1 -SelfTest
 node scripts/smoke_chrome_devtools_mcp.cjs
+powershell -NoProfile -ExecutionPolicy Bypass -File skills/create-chrome-extension/scripts/verify-extension.ps1 `
+  -ExtensionPath tests/fixtures/active-tab-smoke `
+  -ScenarioPath tests/fixtures/active-tab-smoke/tests/e2e.cjs
+python skills/create-chrome-extension/scripts/validate_extension.py tests/fixtures/active-tab-smoke --final-ready
 ```
 
 Official Google Chrome 137+ ignores `--load-extension`. Addonry therefore uses Chrome's supported **Developer Mode** > **Load unpacked** flow for persistent normal-profile installation. Protected browser UI may require one user directory selection. Guarded helper refuses unsupported branded Chrome before changing any process; supported isolated Chromium/Chrome for Testing flows still require browser-level verification.
 
-Large reusable runtime data and npm caches use mounted `agent-devstorage`: `fast-primary` first, then `bulk-secondary`, under `shared-cache\Addonry\cache`. Source stays in this repository. Without a participating drive, runtime falls back to `%LOCALAPPDATA%\Addonry\runtime`.
+Large reusable runtime data and npm caches use mounted `agent-devstorage`: `fast-primary` first, then `bulk-secondary`, under `shared-cache\Addonry\cache`. Source stays in this repository. Without a participating drive, runtime reports fallback and uses `%LOCALAPPDATA%\Addonry\runtime`. FAT32 bulk-secondary storage is supported but first dependency install/module load can be slow; fast-primary remains preferred.
 
 ## Provider development load
 

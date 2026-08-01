@@ -55,7 +55,7 @@ Use supported host Chrome UI automation for normal-profile install, or isolated-
 - use private `developerPrivate` APIs;
 - disable `DisableLoadExtensionCommandLineSwitch` or another browser security feature;
 - copy extension into Chrome installation folders;
-- attach raw remote debugging port to user's normal profile.
+- attach raw remote debugging port to user's normal profile;
 - force-kill Chrome when graceful close fails;
 - launch Chrome when it was closed unless user authorized it.
 

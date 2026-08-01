@@ -9,7 +9,7 @@
         "-ExecutionPolicy",
         "Bypass",
         "-Command",
-        "$roots = @($env:CLAUDE_PLUGIN_ROOT, $env:KIMI_PLUGIN_ROOT, $env:PLUGIN_ROOT, (Get-Location).Path) | Where-Object { $_ }; & (Join-Path $roots[0] 'scripts/start-chrome-devtools-mcp.ps1')"
+        "$roots = @($env:CLAUDE_PLUGIN_ROOT, $env:KIMI_PLUGIN_ROOT, $env:PLUGIN_ROOT, (Get-Location).Path) | Where-Object { $_ }; $root = $roots | Where-Object { Test-Path -LiteralPath (Join-Path $_ 'scripts/start-chrome-devtools-mcp.ps1') } | Select-Object -First 1; if (-not $root) { throw 'Addonry plugin root not found.' }; & (Join-Path $root 'scripts/start-chrome-devtools-mcp.ps1')"
       ],
       "cwd": "./"
     }

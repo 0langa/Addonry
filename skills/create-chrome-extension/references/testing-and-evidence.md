@@ -22,15 +22,19 @@ Generated `tests/e2e.cjs` exports `run(context)`:
 
 ```javascript
 exports.run = async ({ browser, extensionId, manifest, openPopup, getServiceWorker, assert }) => {
-  const popup = await openPopup();
+  const targetPage = await browser.newPage();
+  await targetPage.goto('https://example.com/');
+  const popup = await openPopup(targetPage);
   await popup.waitForSelector('[data-testid="ready"]');
   assert.equal(await popup.$eval('h1', (node) => node.textContent), manifest.name);
 };
 ```
 
-Harness provides actual Chrome, extension ID, parsed manifest, helpers, and Node strict assertion module. Tailor scenario to requested behavior. Avoid mocks at E2E layer.
+Harness provides actual Chrome, verified extension registration, parsed manifest, toolbar-action helpers, and Node strict assertion module. Tailor scenario to requested behavior. Avoid mocks at E2E layer.
 
-`openPopup()` calls `chrome.action.openPopup()` from extension service worker. This tests popup UI but does not reproduce user gesture that grants `activeTab`. When shipped manifest uses `activeTab`, harness records limitation unless tailored scenario can prove real grant. Overall completion then requires toolbar click in installed daily Chrome through supported Chrome control or user, followed by observable result check. Never report generic popup pass as active-tab proof.
+`openPopup(targetPage)` uses Puppeteer's extension toolbar-action API and grants `activeTab` to target page. `triggerAction(targetPage)` handles toolbar actions without popup. When shipped manifest uses `activeTab`, harness records limitation unless tailored scenario invokes one helper with representative page and asserts resulting behavior. `openPopup()` without target page tests popup UI only.
+
+After harness pass, run `validate_extension.py <path> --final-ready`. Gate rejects generic scenario, stale source digest, missing browser-registration or MCP evidence, cleanup warnings, and unresolved limitations.
 
 ## Failure handling
 

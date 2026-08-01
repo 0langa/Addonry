@@ -51,3 +51,8 @@ jobs:
           $output = Join-Path $env:RUNNER_TEMP 'addonry-generated'
           python skills/create-chrome-extension/scripts/scaffold_extension.py --slug ci-smoke --name 'CI Smoke' --description 'Addonry real Chrome smoke.' --output-root $output
           powershell -NoProfile -ExecutionPolicy Bypass -File skills/create-chrome-extension/scripts/verify-extension.ps1 -ExtensionPath (Join-Path $output 'ci-smoke') -ScenarioPath (Join-Path $output 'ci-smoke\tests\e2e.cjs')
+      - name: Toolbar gesture and activeTab real-Chrome smoke
+        shell: pwsh
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File skills/create-chrome-extension/scripts/verify-extension.ps1 -ExtensionPath tests/fixtures/active-tab-smoke -ScenarioPath tests/fixtures/active-tab-smoke/tests/e2e.cjs
+          python skills/create-chrome-extension/scripts/validate_extension.py tests/fixtures/active-tab-smoke --final-ready

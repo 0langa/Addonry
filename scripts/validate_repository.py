@@ -23,6 +23,8 @@ REQUIRED_FILES = (
     "scripts/start-chrome-devtools-mcp.ps1",
     "scripts/smoke_chrome_devtools_mcp.cjs",
     "scripts/sync_manual_command.py",
+    "tests/fixtures/active-tab-smoke/manifest.json",
+    "tests/fixtures/active-tab-smoke/tests/e2e.cjs",
 )
 
 
@@ -84,8 +86,12 @@ def main() -> int:
 
     for relative in (".mcp.json", ".codex-mcp.json", "kimi.plugin.json"):
         mcp_path = ROOT / relative
-        if mcp_path.is_file() and "start-chrome-devtools-mcp.ps1" not in mcp_path.read_text(encoding="utf-8"):
-            errors.append(f"{relative} does not use Addonry runtime wrapper")
+        if mcp_path.is_file():
+            mcp_text = mcp_path.read_text(encoding="utf-8")
+            if "start-chrome-devtools-mcp.ps1" not in mcp_text:
+                errors.append(f"{relative} does not use Addonry runtime wrapper")
+            if "Test-Path" not in mcp_text or "Addonry plugin root not found" not in mcp_text:
+                errors.append(f"{relative} does not verify selected plugin root")
     wrapper = ROOT / "scripts/start-chrome-devtools-mcp.ps1"
     if wrapper.is_file():
         wrapper_text = wrapper.read_text(encoding="utf-8")
@@ -93,6 +99,19 @@ def main() -> int:
             errors.append("Chrome DevTools MCP runtime is not immutably pinned")
         if "CHROME_DEVTOOLS_MCP_NO_USAGE_STATISTICS" not in wrapper_text:
             errors.append("Chrome DevTools MCP usage-statistics opt-out missing")
+        if "routing.log" not in wrapper_text or "--no-audit" not in wrapper_text:
+            errors.append("Chrome DevTools MCP runtime install lacks reproducible storage hygiene")
+
+    verifier = ROOT / "skills/create-chrome-extension/scripts/verify_extension.cjs"
+    if verifier.is_file():
+        verifier_text = verifier.read_text(encoding="utf-8")
+        for required_token in ("browser.extensions()", "triggerAction", "extensionRegistration", "cleanupWarnings"):
+            if required_token not in verifier_text:
+                errors.append(f"extension verifier missing final-evidence behavior: {required_token}")
+
+    validator = ROOT / "skills/create-chrome-extension/scripts/validate_extension.py"
+    if validator.is_file() and "--final-ready" not in validator.read_text(encoding="utf-8"):
+        errors.append("extension validator lacks final-ready evidence gate")
 
     restart_helper = ROOT / "skills/create-chrome-extension/scripts/restart-chrome-with-extension.ps1"
     if restart_helper.is_file():

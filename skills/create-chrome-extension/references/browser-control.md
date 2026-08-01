@@ -35,3 +35,5 @@ Auto-connect requires user to enable debugging and accept Chrome dialog. It gran
 ## Final installation UI
 
 If host offers user-Chrome control (for example Codex Chrome capability), use it for `chrome://extensions` and toolbar pinning after extension passes isolated tests. Chrome DevTools MCP remains primary diagnostic tool. Protected browser UI may still require one user confirmation.
+
+If browser capability rejects `chrome://extensions` or forbids extension-management control, treat rejection as hard boundary. Do not switch to Computer Use, another browser surface, JavaScript URLs, profile edits, or OS-level UI automation to bypass it. Report exact **Load unpacked** path and wait for user action.

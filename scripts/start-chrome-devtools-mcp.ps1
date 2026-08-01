@@ -7,6 +7,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $packageVersion = '1.6.0'
+$script:AddonryDevstorageRoot = $null
 
 function Get-AddonryRuntimeRoot {
     if ($env:ADDONRY_RUNTIME_ROOT) {
@@ -34,6 +35,7 @@ function Get-AddonryRuntimeRoot {
     }
     $selected = $candidates | Sort-Object Priority | Select-Object -First 1
     if ($selected) {
+        $script:AddonryDevstorageRoot = $selected.Root
         return Join-Path $selected.Root 'shared-cache\Addonry\cache\runtime'
     }
 
@@ -44,6 +46,15 @@ function Get-AddonryRuntimeRoot {
     }
 
     return Join-Path $env:LOCALAPPDATA 'Addonry\runtime'
+}
+
+function Write-AddonryRoutingLog([string]$Destination, [string]$Reason) {
+    if (-not $script:AddonryDevstorageRoot) { return }
+    $janitor = Join-Path $script:AddonryDevstorageRoot '_janitor'
+    New-Item -ItemType Directory -Force -Path $janitor | Out-Null
+    $provider = if ($env:CLAUDE_PLUGIN_ROOT) { 'claude' } elseif ($env:KIMI_PLUGIN_ROOT) { 'kimi' } else { 'codex' }
+    $line = "{0} {1} Addonry {2} {3}" -f [DateTimeOffset]::Now.ToString('o'), $provider, $Destination, $Reason
+    Add-Content -LiteralPath (Join-Path $janitor 'routing.log') -Value $line
 }
 
 function Write-AddonryError([string]$Message) {
@@ -73,6 +84,12 @@ if (Test-Path -LiteralPath $packageJson) {
 }
 
 if ($installedVersion -ne $packageVersion -or -not (Test-Path -LiteralPath $entryPoint)) {
+    if ($script:AddonryDevstorageRoot) {
+        Write-AddonryRoutingLog -Destination $packageRoot -Reason "chrome-devtools-mcp-$packageVersion runtime install"
+    }
+    else {
+        Write-AddonryError "external devstorage unavailable; using $runtimeRoot"
+    }
     $npm = Get-Command npm -ErrorAction SilentlyContinue
     if (-not $npm) {
         Write-AddonryError 'npm is required. Install current Node.js LTS and retry.'
@@ -84,7 +101,7 @@ if ($installedVersion -ne $packageVersion -or -not (Test-Path -LiteralPath $entr
     # success only from process exit code plus expected entry point.
     $previousErrorActionPreference = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
-    & $npm.Source install --prefix $packageRoot --no-save --omit=dev --ignore-scripts "chrome-devtools-mcp@$packageVersion" *> $installLog
+    & $npm.Source install --prefix $packageRoot --no-save --omit=dev --ignore-scripts --no-audit --no-fund "chrome-devtools-mcp@$packageVersion" *> $installLog
     $installExitCode = $LASTEXITCODE
     $ErrorActionPreference = $previousErrorActionPreference
     if ($installExitCode -ne 0 -or -not (Test-Path -LiteralPath $entryPoint)) {

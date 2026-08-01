@@ -16,7 +16,7 @@ sys.path.insert(0, str(TOOLS))
 
 from generate_icons import PNG_SIGNATURE, generate_icons, parse_hex_color  # noqa: E402
 from scaffold_extension import default_output_root, resolve_output_root, scaffold  # noqa: E402
-from validate_extension import validate_extension  # noqa: E402
+from validate_extension import source_digest, validate_extension  # noqa: E402
 
 
 class IconTests(unittest.TestCase):
@@ -63,6 +63,10 @@ class ScaffoldTests(unittest.TestCase):
             self.assertEqual(manifest["manifest_version"], 3)
             self.assertTrue((target / "tests" / "e2e.cjs").is_file())
             self.assertTrue((target / ".addonry" / "project.json").is_file())
+            readme = (target / "README.md").read_text(encoding="utf-8")
+            self.assertIn("Google Chrome 137+", readme)
+            self.assertIn("--final-ready", readme)
+            self.assertNotIn("Use Addonry's guarded Chrome restart helper when authorized", readme)
 
     def test_scaffold_fails_release_ready_validation(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -120,6 +124,126 @@ class ValidatorTests(unittest.TestCase):
             codes = {item.code for item in validate_extension(root)}
             self.assertIn("high-risk-permission", codes)
             self.assertIn("broad-host-access", codes)
+
+    def test_checks_optional_permissions_content_matches_and_manifest_resources(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "manifest.json").write_text(
+                json.dumps(
+                    {
+                        "manifest_version": 3,
+                        "name": "Broad Tool",
+                        "version": "1.0.0",
+                        "optional_permissions": ["cookies"],
+                        "content_scripts": [{"matches": ["*://*/*"], "js": ["content.js"]}],
+                        "web_accessible_resources": [{"resources": ["missing.js"], "matches": ["https://example.com/*"]}],
+                    }
+                ),
+                encoding="utf-8",
+            )
+            (root / "content.js").write_text("export const ready = true;", encoding="utf-8")
+            codes = {item.code for item in validate_extension(root)}
+            self.assertIn("high-risk-permission", codes)
+            self.assertIn("broad-host-access", codes)
+            self.assertIn("referenced-file-missing", codes)
+
+    def test_detects_static_remote_import_and_secret_in_json(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "manifest.json").write_text(
+                json.dumps({"manifest_version": 3, "name": "Unsafe", "version": "1.0.0"}),
+                encoding="utf-8",
+            )
+            (root / "module.js").write_text("import helper from 'https://example.com/helper.js';", encoding="utf-8")
+            (root / "settings.json").write_text('{"api_key": "1234567890abcdef"}', encoding="utf-8")
+            codes = {item.code for item in validate_extension(root)}
+            self.assertIn("remote-code", codes)
+            self.assertIn("embedded-secret", codes)
+
+    def test_malformed_permission_fields_return_findings_instead_of_crashing(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            (root / "manifest.json").write_text(
+                json.dumps(
+                    {
+                        "manifest_version": 3,
+                        "name": "Malformed",
+                        "version": "1.0.0",
+                        "permissions": None,
+                        "content_scripts": None,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            codes = {item.code for item in validate_extension(root)}
+            self.assertIn("invalid-permission-list", codes)
+            self.assertIn("invalid-manifest-list", codes)
+
+    def test_final_ready_rejects_stale_browser_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = scaffold("verified", "Verified", "Verified extension.", Path(temporary))
+            (root / "src" / "popup.html").write_text("<!doctype html><title>Verified</title><script src=\"popup.js\"></script>", encoding="utf-8")
+            (root / "tests" / "e2e.cjs").write_text("exports.run = async ({ assert }) => { assert.ok(true); };\n", encoding="utf-8")
+            project_path = root / ".addonry" / "project.json"
+            project = json.loads(project_path.read_text(encoding="utf-8"))
+            project["status"] = "implemented"
+            project["acceptance"] = {"popup": "opens"}
+            project_path.write_text(json.dumps(project), encoding="utf-8")
+            evidence = {
+                "status": "passed",
+                "sourceSha256": source_digest(root),
+                "scenario": str(root / "tests" / "e2e.cjs"),
+                "limitations": [],
+                "cleanupWarnings": [],
+                "chromeDevtoolsMcp": {"status": "passed"},
+                "extensionRegistration": {
+                    "id": "abcdefghijklmnopabcdefghijklmnop",
+                    "name": "Verified",
+                    "version": "0.1.0",
+                    "path": str(root),
+                    "enabled": True,
+                },
+            }
+            verification_path = root / ".addonry" / "verification.json"
+            verification_path.write_text(json.dumps(evidence), encoding="utf-8")
+            self.assertEqual([item for item in validate_extension(root, final_ready=True) if item.level == "error"], [])
+
+            (root / "src" / "popup.js").write_text("document.body.dataset.changed = 'true';", encoding="utf-8")
+            codes = {item.code for item in validate_extension(root, final_ready=True)}
+            self.assertIn("verification-stale", codes)
+
+    def test_final_ready_rejects_mismatched_registration_and_browser_errors(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = scaffold("verified", "Verified", "Verified extension.", Path(temporary))
+            (root / "src" / "popup.html").write_text("<!doctype html><title>Verified</title><script src=\"popup.js\"></script>", encoding="utf-8")
+            (root / "tests" / "e2e.cjs").write_text("exports.run = async ({ assert }) => { assert.ok(true); };\n", encoding="utf-8")
+            project_path = root / ".addonry" / "project.json"
+            project = json.loads(project_path.read_text(encoding="utf-8"))
+            project.update({"status": "implemented", "acceptance": {"popup": "opens"}})
+            project_path.write_text(json.dumps(project), encoding="utf-8")
+            evidence = {
+                "status": "passed",
+                "sourceSha256": source_digest(root),
+                "scenario": str(root / "other-e2e.cjs"),
+                "consoleErrors": ["boom"],
+                "pageErrors": [],
+                "workerErrors": [],
+                "limitations": [],
+                "cleanupWarnings": [],
+                "chromeDevtoolsMcp": {"status": "passed"},
+                "extensionRegistration": {
+                    "id": "not-an-extension-id",
+                    "name": "Wrong",
+                    "version": "9.9.9",
+                    "path": str(root.parent),
+                    "enabled": True,
+                },
+            }
+            (root / ".addonry" / "verification.json").write_text(json.dumps(evidence), encoding="utf-8")
+            codes = {item.code for item in validate_extension(root, final_ready=True)}
+            self.assertIn("verification-scenario-mismatch", codes)
+            self.assertIn("extension-registration-mismatch", codes)
+            self.assertIn("browser-errors-present", codes)
 
 
 @unittest.skipUnless(sys.platform == "win32", "PowerShell helper is Windows-specific")

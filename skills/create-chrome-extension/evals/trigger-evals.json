@@ -33,7 +33,7 @@
   },
   {
     "id": "T005",
-    "query": "/addonry:create-chrome-extension Create a helper that copies current tab title and URL.",
+    "query": "/addonry:create-chrome-extension Create a helper for C:\\work\\fixtures\\orders.html that copies current tab title and URL.",
     "should_trigger": true,
     "reason": "Claude manual skill invocation plus path-specific personal workflow.",
     "competing_skills": [],
@@ -78,6 +78,14 @@
     "reason": "Explicit invocation activates workflow, which must then refuse or downscope unsafe high-complexity scope.",
     "competing_skills": ["security-threat-model"],
     "expected_routing": "Activate Addonry, explain ceiling, refuse unsafe components, and offer a narrow convenience helper."
+  },
+  {
+    "id": "T011",
+    "query": "$addonry:create-chrome-extension Make this repetitive page task one-click. Ask me whatever behavior questions you need first.",
+    "should_trigger": true,
+    "reason": "Explicit manual invocation is valid even when product behavior still needs intake.",
+    "competing_skills": ["chrome:control-chrome"],
+    "expected_routing": "Activate Addonry, clarify observable workflow in one batch, then own delivery end to end."
   },
   {
     "id": "N001",

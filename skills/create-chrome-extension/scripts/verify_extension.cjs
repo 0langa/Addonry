@@ -74,8 +74,11 @@ async function run() {
   const consoleErrors = [];
   const pageErrors = [];
   const workerErrors = [];
+  const cleanupWarnings = [];
   const startedAt = new Date().toISOString();
   let browser;
+  let report;
+  let failureError;
 
   fs.mkdirSync(path.dirname(reportPath), { recursive: true });
   fs.writeFileSync(reportPath, `${JSON.stringify({ status: 'running', startedAt, extension: extensionRoot, sourceSha256 }, null, 2)}\n`, 'utf8');
@@ -92,12 +95,31 @@ async function run() {
 
     const extensionId = await browser.installExtension(extensionRoot);
     assert.ok(extensionId, 'Chrome did not return installed extension ID');
+    const extensions = await browser.extensions();
+    const installedExtension = extensions.get(extensionId);
+    assert.ok(installedExtension, 'Installed extension missing from browser.extensions()');
+    assert.equal(installedExtension.enabled, true, 'Installed extension is disabled');
+    assert.equal(installedExtension.name, manifest.name, 'Installed extension name differs from manifest');
+    assert.equal(installedExtension.version, manifest.version, 'Installed extension version differs from manifest');
+    const canonicalPath = (value) => {
+      const resolved = fs.realpathSync.native(path.resolve(value));
+      return process.platform === 'win32' ? resolved.toLowerCase() : resolved;
+    };
+    assert.equal(canonicalPath(installedExtension.path), canonicalPath(extensionRoot), 'Installed extension source path differs from requested durable path');
+    const extensionRegistration = {
+      id: installedExtension.id,
+      name: installedExtension.name,
+      version: installedExtension.version,
+      path: installedExtension.path,
+      enabled: installedExtension.enabled,
+    };
 
     const getServiceWorkerTarget = async () => browser.waitForTarget(
       (target) => target.type() === 'service_worker' && target.url().startsWith(`chrome-extension://${extensionId}/`),
       { timeout: 15000 },
     );
     const attachedWorkers = new WeakSet();
+    const attachedPages = new WeakSet();
 
     const attachWorkerDiagnostics = (worker) => {
       if (attachedWorkers.has(worker)) return worker;
@@ -110,6 +132,8 @@ async function run() {
     };
 
     const attachPageDiagnostics = (page) => {
+      if (attachedPages.has(page)) return page;
+      attachedPages.add(page);
       page.on('console', (message) => {
         if (message.type() === 'error') consoleErrors.push(redact(message.text()));
       });
@@ -126,16 +150,37 @@ async function run() {
 
     if (manifest.background && manifest.background.service_worker) await getServiceWorker();
 
-    const openPopup = async () => {
+    let activeTabGestureTriggered = false;
+    const triggerAction = async (targetPage) => {
+      assert.ok(targetPage, 'triggerAction(targetPage) requires representative page');
+      attachPageDiagnostics(targetPage);
+      await targetPage.bringToFront();
+      await installedExtension.triggerAction(targetPage);
+      activeTabGestureTriggered = true;
+    };
+
+    const openPopup = async (targetPage = null) => {
       const popupPath = manifest.action && manifest.action.default_popup;
       assert.ok(popupPath, 'Manifest has no action.default_popup');
-      const existing = browser.targets().find((target) => target.type() === 'page' && target.url().endsWith(`/${popupPath}`));
+      let existing = browser.targets().find((target) => target.type() === 'page' && target.url().endsWith(`/${popupPath}`));
+      if (existing && targetPage) {
+        const existingPage = await existing.asPage();
+        if (existingPage) await existingPage.close();
+        existing = null;
+      }
       if (existing) {
         const existingPage = await existing.asPage();
         return attachPageDiagnostics(existingPage);
       }
       let popup;
-      if (manifest.background && manifest.background.service_worker) {
+      if (targetPage) {
+        const popupTarget = browser.waitForTarget(
+          (candidate) => candidate.type() === 'page' && candidate.url().endsWith(`/${popupPath}`),
+          { timeout: 10000 },
+        );
+        await triggerAction(targetPage);
+        popup = await (await popupTarget).asPage();
+      } else if (manifest.background && manifest.background.service_worker) {
         const worker = await getServiceWorker();
         await worker.evaluate(() => chrome.action.openPopup());
         const target = await browser.waitForTarget(
@@ -154,22 +199,23 @@ async function run() {
     };
 
     let scenario = 'generic-popup';
-    let scenarioResult = {};
     if (args.scenario) {
       scenario = path.resolve(args.scenario);
       delete require.cache[require.resolve(scenario)];
       const loaded = require(scenario);
       assert.equal(typeof loaded.run, 'function', 'Scenario must export run(context)');
-      scenarioResult = (await loaded.run({
+      await loaded.run({
         browser,
+        extension: installedExtension,
         extensionId,
         manifest,
         openPopup,
+        triggerAction,
         getServiceWorker,
         attachPageDiagnostics,
         assert,
         artifactDir,
-      })) || {};
+      });
     } else {
       const popup = await openPopup();
       await popup.waitForSelector('body');
@@ -183,12 +229,14 @@ async function run() {
     const mcpProbe = await probeChromeDevtoolsMcp({ browserUrl: `http://${endpoint.host}`, openPage: false });
 
     const limitations = [];
-    const usesActiveTab = Array.isArray(manifest.permissions) && manifest.permissions.includes('activeTab');
-    if (usesActiveTab && scenarioResult.activeTabGrantTested !== true) {
-      limitations.push('Puppeteer openPopup does not grant activeTab; verify one real toolbar user gesture in installed Chrome.');
+    const usesActiveTab = ['permissions', 'optional_permissions'].some(
+      (key) => Array.isArray(manifest[key]) && manifest[key].includes('activeTab'),
+    );
+    if (usesActiveTab && !activeTabGestureTriggered) {
+      limitations.push('activeTab declared but tailored scenario did not invoke openPopup(targetPage) or triggerAction(targetPage).');
     }
 
-    const report = {
+    report = {
       status: 'passed',
       startedAt,
       finishedAt: new Date().toISOString(),
@@ -202,32 +250,55 @@ async function run() {
       pageErrors,
       workerErrors,
       limitations,
+      cleanupWarnings,
       sourceSha256,
+      extensionRegistration,
+      activeTabGestureTriggered,
       chromeDevtoolsMcp: mcpProbe,
       profileRetained: Boolean(args.keepProfile),
     };
-    fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
-    process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
   } catch (error) {
-    const failure = {
+    failureError = error;
+    report = {
       status: 'failed',
       startedAt,
       finishedAt: new Date().toISOString(),
       extension: extensionRoot,
       sourceSha256,
       error: redact(error && (error.stack || error)),
+      cleanupWarnings,
     };
-    fs.writeFileSync(reportPath, `${JSON.stringify(failure, null, 2)}\n`, 'utf8');
-    throw error;
   } finally {
-    if (browser) await browser.close();
+    if (browser) {
+      try {
+        await browser.close();
+      } catch (error) {
+        cleanupWarnings.push(`Browser close failed: ${redact(error && (error.message || error))}`);
+      }
+    }
     if (!args.keepProfile) {
       const resolvedParent = path.resolve(profileParent) + path.sep;
       const resolvedProfile = path.resolve(profile);
-      if (!resolvedProfile.startsWith(resolvedParent)) throw new Error('Refusing to remove profile outside test root');
-      fs.rmSync(resolvedProfile, { recursive: true, force: true });
+      if (!resolvedProfile.startsWith(resolvedParent)) {
+        cleanupWarnings.push('Refused to remove profile outside configured test root.');
+      } else {
+        try {
+          fs.rmSync(resolvedProfile, { recursive: true, force: true, maxRetries: 8, retryDelay: 250 });
+        } catch (error) {
+          cleanupWarnings.push(`Profile cleanup failed: ${redact(error && (error.message || error))}`);
+        }
+      }
     }
   }
+
+  report.cleanupWarnings = cleanupWarnings;
+  report.profileRetained = Boolean(args.keepProfile || cleanupWarnings.some((warning) => warning.startsWith('Profile cleanup')));
+  fs.writeFileSync(reportPath, `${JSON.stringify(report, null, 2)}\n`, 'utf8');
+  if (cleanupWarnings.length) {
+    process.stderr.write(`${cleanupWarnings.join('\n')}\n`);
+  }
+  if (failureError) throw failureError;
+  process.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
 }
 
 run().catch((error) => {

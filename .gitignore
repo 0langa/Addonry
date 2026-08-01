@@ -1,5 +1,7 @@
 .recall/
 generated/
+tests/fixtures/**/.addonry/verification.json
+tests/fixtures/**/.addonry/artifacts/
 
 # Dependencies and build output
 node_modules/
@@ -27,4 +29,3 @@ Thumbs.db
 desktop.ini
 .vscode/
 .idea/
-

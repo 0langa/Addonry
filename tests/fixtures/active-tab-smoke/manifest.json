@@ -1,0 +1,16 @@
+{
+  "manifest_version": 3,
+  "name": "Addonry Active Tab Smoke",
+  "version": "1.0.0",
+  "description": "Proves toolbar gesture and activeTab execution in Addonry E2E.",
+  "permissions": [
+    "activeTab",
+    "scripting"
+  ],
+  "background": {
+    "service_worker": "service-worker.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  }
+}

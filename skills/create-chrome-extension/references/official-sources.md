@@ -1,6 +1,6 @@
 # Official Sources
 
-Checked 2026-07-30. Re-open relevant primary page whenever current behavior matters.
+Checked 2026-08-01. Re-open relevant primary page whenever current behavior matters.
 
 ## Chrome Extensions
 
@@ -12,6 +12,8 @@ Checked 2026-07-30. Re-open relevant primary page whenever current behavior matt
 - Security: https://developer.chrome.com/docs/extensions/develop/security-privacy/stay-secure
 - E2E testing: https://developer.chrome.com/docs/extensions/how-to/test/end-to-end-testing
 - Puppeteer extension testing: https://developer.chrome.com/docs/extensions/how-to/test/puppeteer
+- Puppeteer `Browser.installExtension()` and registration APIs: https://pptr.dev/api/puppeteer.browser.installextension
+- Puppeteer `Extension.triggerAction()` and extension metadata: https://pptr.dev/api/puppeteer.extension
 - ChromeDriver load-extension option: https://developer.chrome.com/docs/chromedriver/extensions
 - Self-hosting and installation restrictions: https://developer.chrome.com/docs/extensions/how-to/distribute
 - Windows external installation restrictions: https://developer.chrome.com/docs/extensions/how-to/distribute/install-extensions
@@ -30,6 +32,7 @@ For branded Google Chrome 137+, do not use `--load-extension`. Do not disable fe
 ## Chrome DevTools MCP
 
 - Official repository and setup: https://github.com/ChromeDevTools/chrome-devtools-mcp
+- Published package (current pinned version check): https://www.npmjs.com/package/chrome-devtools-mcp
 
 Use repository README for current Node/Chrome requirements, client configuration, runtime flags, auto-connect behavior, and security warning for remote debugging.
 

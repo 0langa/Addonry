@@ -50,6 +50,8 @@ class RepositoryTests(unittest.TestCase):
             self.assertIn("KIMI_PLUGIN_ROOT", resolver)
             self.assertIn("PLUGIN_ROOT", resolver)
             self.assertIn("start-chrome-devtools-mcp.ps1", resolver)
+            self.assertIn("Test-Path", resolver)
+            self.assertIn("Addonry plugin root not found", resolver)
 
     def test_runtime_uses_agent_devstorage_identity(self) -> None:
         for relative in (
@@ -61,6 +63,24 @@ class RepositoryTests(unittest.TestCase):
             self.assertIn("DRIVE-IDENTITY.json", script)
             self.assertIn("shared-cache\\Addonry\\cache\\runtime", script)
             self.assertNotIn("AvailableFreeSpace", script)
+            self.assertIn("routing.log", script)
+            self.assertIn("external devstorage unavailable", script)
+
+    def test_manual_trigger_eval_corpus_is_balanced_and_provider_native(self) -> None:
+        cases = json.loads(
+            (ROOT / "skills/create-chrome-extension/evals/trigger-evals.json").read_text(encoding="utf-8")
+        )
+        positive = [case for case in cases if case["should_trigger"] is True]
+        negative = [case for case in cases if case["should_trigger"] is False]
+        self.assertGreaterEqual(len(positive), 8)
+        self.assertLessEqual(len(positive), 12)
+        self.assertGreaterEqual(len(negative), 8)
+        self.assertLessEqual(len(negative), 12)
+        self.assertEqual(len({case["id"] for case in cases}), len(cases))
+        prefixes = ("$addonry:create-chrome-extension", "/addonry:create-chrome-extension", "/skill:create-chrome-extension")
+        self.assertTrue(all(case["query"].startswith(prefixes) for case in positive))
+        self.assertTrue(all(not case["query"].startswith(prefixes) for case in negative))
+        self.assertTrue(any("C:\\work\\" in case["query"] for case in positive))
 
 
 if __name__ == "__main__":
