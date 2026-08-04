@@ -1,6 +1,7 @@
 ---
 name: create-chrome-extension
 description: Use when user explicitly invokes Addonry or this skill for building personal Manifest V3 browser utilities, for creating page helpers and extractors, for testing tab actions and formatters, or for delivering narrow download and cookie tools end to end. Manual-only; never activate from unqualified prose.
+disableModelInvocation: true
 ---
 
 # Create Chrome Extension

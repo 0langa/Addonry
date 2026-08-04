@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+- Enforced Kimi's native manual-only skill gate with `disableModelInvocation: true`, backed by repository validation and regression coverage.
+- Excluded local runtime state and generated dependencies from repository source validation.
+
 ## [0.2.0] - 2026-08-01
 
 - Added source-bound `--final-ready` gate requiring passed tailored Chrome E2E, extension registration, MCP evidence, clean cleanup, and no unresolved limitations.

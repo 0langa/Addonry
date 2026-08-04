@@ -1,11 +1,18 @@
 from __future__ import annotations
 
 import json
+import importlib.util
+import re
 import subprocess
+import tempfile
 import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+VALIDATOR_SPEC = importlib.util.spec_from_file_location("addonry_repository_validator", ROOT / "scripts/validate_repository.py")
+assert VALIDATOR_SPEC is not None and VALIDATOR_SPEC.loader is not None
+VALIDATOR = importlib.util.module_from_spec(VALIDATOR_SPEC)
+VALIDATOR_SPEC.loader.exec_module(VALIDATOR)
 
 
 class RepositoryTests(unittest.TestCase):
@@ -23,6 +30,10 @@ class RepositoryTests(unittest.TestCase):
         forge = (ROOT / "forge.yaml").read_text(encoding="utf-8")
         self.assertIn("agents: []", forge)
         self.assertIn("allow_implicit_invocation: false", (ROOT / "skills/create-chrome-extension/agents/openai.yaml").read_text(encoding="utf-8"))
+        skill = (ROOT / "skills/create-chrome-extension/SKILL.md").read_text(encoding="utf-8")
+        frontmatter = re.match(r"\A---\s*\n(?P<content>.*?)\n---(?:\s*\n|\Z)", skill, re.DOTALL)
+        self.assertIsNotNone(frontmatter)
+        self.assertRegex(frontmatter.group("content"), r"(?m)^disableModelInvocation:\s*true\s*$")
         self.assertIn(
             "path: skills/create-chrome-extension/SKILL.md\n    providers:\n    - codex\n    - kimi",
             forge,
@@ -32,6 +43,22 @@ class RepositoryTests(unittest.TestCase):
             forge,
         )
 
+    def test_repository_validator_excludes_local_runtime_and_generated_paths(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "docs" / "guide.md"
+            runtime = root / ".recall" / "memory.json"
+            dependency = root / "node_modules" / "package.json"
+            generated = root / "generated" / "extension.json"
+            for path in (source, runtime, dependency, generated):
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("source", encoding="utf-8")
+
+            self.assertTrue(VALIDATOR.is_source_text_file(source))
+            self.assertFalse(VALIDATOR.is_source_text_file(runtime))
+            self.assertFalse(VALIDATOR.is_source_text_file(dependency))
+            self.assertFalse(VALIDATOR.is_source_text_file(generated))
+
     def test_provider_safe_mcp_root_resolution(self) -> None:
         codex_manifest = json.loads((ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))
         self.assertEqual(codex_manifest["mcpServers"], "./.codex-mcp.json")
@@ -39,12 +66,12 @@ class RepositoryTests(unittest.TestCase):
         claude_mcp = json.loads((ROOT / ".mcp.json").read_text(encoding="utf-8"))
         kimi = json.loads((ROOT / "kimi.plugin.json").read_text(encoding="utf-8"))
         entries = [
-            codex_mcp["mcpServers"]["addonry-chrome-devtools"],
-            claude_mcp["mcpServers"]["addonry-chrome-devtools"],
-            kimi["mcpServers"]["addonry-chrome-devtools"],
+            (codex_mcp["mcpServers"]["addonry-chrome-devtools"], "./"),
+            (claude_mcp["mcpServers"]["addonry-chrome-devtools"], "${CLAUDE_PLUGIN_ROOT}"),
+            (kimi["mcpServers"]["addonry-chrome-devtools"], "./"),
         ]
-        for entry in entries:
-            self.assertEqual(entry["cwd"], "./")
+        for entry, expected_cwd in entries:
+            self.assertEqual(entry["cwd"], expected_cwd)
             resolver = entry["args"][-1]
             self.assertIn("CLAUDE_PLUGIN_ROOT", resolver)
             self.assertIn("KIMI_PLUGIN_ROOT", resolver)

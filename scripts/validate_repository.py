@@ -9,6 +9,10 @@ import subprocess
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+LOCAL_OR_GENERATED_PATH_PARTS = frozenset(
+    {".git", ".recall", ".venv", "__pycache__", "build", "dist", "generated", "node_modules"}
+)
+TEXT_SOURCE_SUFFIXES = frozenset({".md", ".json", ".yaml", ".yml", ".py", ".ps1", ".js", ".cjs"})
 REQUIRED_FILES = (
     "forge.yaml",
     ".claude-plugin/plugin.json",
@@ -28,6 +32,11 @@ REQUIRED_FILES = (
 )
 
 
+def is_source_text_file(path: Path) -> bool:
+    """Keep local runtime state and generated dependencies out of source checks."""
+    return path.is_file() and not (LOCAL_OR_GENERATED_PATH_PARTS & set(path.parts)) and path.suffix.lower() in TEXT_SOURCE_SUFFIXES
+
+
 def main() -> int:
     errors: list[str] = []
     for relative in REQUIRED_FILES:
@@ -37,7 +46,7 @@ def main() -> int:
     text_files = [
         path
         for path in ROOT.rglob("*")
-        if path.is_file() and ".git" not in path.parts and path.suffix.lower() in {".md", ".json", ".yaml", ".yml", ".py", ".ps1", ".js", ".cjs"}
+        if is_source_text_file(path)
     ]
     placeholder_token = "TO" + "DO"
     for path in text_files:
@@ -66,6 +75,11 @@ def main() -> int:
     skill_path = ROOT / "skills/create-chrome-extension/SKILL.md"
     if skill_path.is_file():
         skill = skill_path.read_text(encoding="utf-8")
+        frontmatter = re.match(r"\A---\s*\n(?P<content>.*?)\n---(?:\s*\n|\Z)", skill, re.DOTALL)
+        if frontmatter is None or not re.search(
+            r"(?m)^disableModelInvocation:\s*true\s*$", frontmatter.group("content")
+        ):
+            errors.append("manual-only Kimi policy missing")
         for reference in re.findall(r"\]\((references/[^)]+)\)", skill):
             if not (skill_path.parent / reference).is_file():
                 errors.append(f"missing skill reference: {reference}")

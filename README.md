@@ -23,7 +23,7 @@ Generated extensions live in durable personal storage outside provider caches. O
 
 - Codex: `agents/openai.yaml` disables implicit skill invocation.
 - Claude Code: only namespaced slash command is exposed; no model-invocable skill is registered.
-- Kimi Code: namespaced slash command remains canonical. Manual-only `/skill:create-chrome-extension` fallback covers Kimi 0.29.x Windows builds that install plugins but omit plugin commands from command registry.
+- Kimi Code: `disableModelInvocation: true` in the canonical skill frontmatter blocks implicit model invocation. Namespaced slash command remains canonical; manual-only `/skill:create-chrome-extension` fallback covers Kimi 0.29.x Windows builds that install plugins but omit plugin commands from command registry.
 - No plugin agent is registered for automatic delegation.
 - Bundled MCP tools remain host-visible while the plugin is enabled because current plugin hosts start declared MCP servers eagerly. Addonry instructions permit their use only after explicit invocation.
 
