@@ -19,6 +19,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
+      - name: Provider manifest drift check
+        shell: pwsh
+        run: |
+          python -m pip install --disable-pip-version-check "plugin-forge @ git+https://github.com/0langa/plugin-forge.git@45fe4755b2086e14b4ca516ab76874fc0285cdb9"
+          forge sync
       - name: Unit and repository checks
         shell: pwsh
         run: |

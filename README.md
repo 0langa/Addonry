@@ -39,6 +39,7 @@ Generated extensions live in durable personal storage outside provider caches. O
 ```powershell
 python -m unittest discover -s tests -v
 python scripts/validate_repository.py
+forge sync
 node --check skills/create-chrome-extension/scripts/verify_extension.cjs
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-chrome-devtools-mcp.ps1 -SelfTest
 node scripts/smoke_chrome_devtools_mcp.cjs
