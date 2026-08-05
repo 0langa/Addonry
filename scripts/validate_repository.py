@@ -72,6 +72,20 @@ def main() -> int:
     if identities and identities != {("addonry", expected_version)}:
         errors.append(f"provider identity drift: {sorted(map(str, identities))}")
 
+    expected_provider_surfaces = {
+        ".claude-plugin/plugin.json": {"commands": "./commands", "mcpServers": "./.mcp.json"},
+        ".codex-plugin/plugin.json": {"skills": "./skills/", "mcpServers": "./.codex-mcp.json"},
+        "kimi.plugin.json": {"skills": "./skills/", "commands": "./commands/"},
+    }
+    for relative, expected in expected_provider_surfaces.items():
+        path = ROOT / relative
+        if not path.is_file():
+            continue
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        for key, value in expected.items():
+            if payload.get(key) != value:
+                errors.append(f"provider surface drift: {relative} {key} must be {value!r}")
+
     skill_path = ROOT / "skills/create-chrome-extension/SKILL.md"
     if skill_path.is_file():
         skill = skill_path.read_text(encoding="utf-8")

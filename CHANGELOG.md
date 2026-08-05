@@ -4,7 +4,7 @@
 
 - Enforced Kimi's native manual-only skill gate with `disableModelInvocation: true`, backed by repository validation and regression coverage.
 - Excluded local runtime state and generated dependencies from repository source validation.
-- Added a CI gate using immutable Plugin Forge source to detect generated provider-manifest drift.
+- Strengthened source validation for generated provider-surface paths without relying on cross-repository CI access.
 
 ## [0.2.0] - 2026-08-01
 
