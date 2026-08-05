@@ -1,5 +1,5 @@
 name: addonry
-version: 0.2.0
+version: 0.2.1
 description: Manual-only tri-client plugin for autonomous end-to-end Chrome extension
   development.
 providers:
