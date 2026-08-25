@@ -2,14 +2,9 @@
 
 ## [0.2.1] - 2026-08-05
 
-- Fixed Kimi skill metadata so Addonry remains manual-only on every provider.
-- Made generated-provider validation self-contained and added regression coverage.
-
-## [Unreleased]
-
-- Enforced Kimi's native manual-only skill gate with `disableModelInvocation: true`, backed by repository validation and regression coverage.
+- Enforced Kimi's native manual-only skill gate with `disableModelInvocation: true`, so Addonry remains manual-only on every provider, backed by repository validation and regression coverage.
+- Made generated-provider validation self-contained, verifying provider-surface paths without cross-repository CI access.
 - Excluded local runtime state and generated dependencies from repository source validation.
-- Strengthened source validation for generated provider-surface paths without relying on cross-repository CI access.
 
 ## [0.2.0] - 2026-08-01
 
