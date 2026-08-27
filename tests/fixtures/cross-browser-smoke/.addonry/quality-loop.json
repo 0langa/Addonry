@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "status": "passed",
+  "iteration": 7,
+  "sourceSha256": "ce60b03e023807bb728518924b9df589d70e26f1b8b588b1c023e1a5ed49c7a0",
+  "contractSha256": "7d860782332dec50f83ab84c57989fb3ba037709a339e4648915ce89d6bdbf19",
+  "failureFingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+  "repeatCount": 0,
+  "stallThreshold": 3,
+  "nextAction": "All confirmed criteria passed. Use exact verified package or continue authorized installation step.",
+  "report": ".addonry/quality-report.json",
+  "updatedAt": "2026-08-27T03:06:33.031645+00:00",
+  "history": [
+    {
+      "iteration": 1,
+      "assessedAt": "2026-08-27T02:49:25.894377+00:00",
+      "status": "repair-required",
+      "sourceSha256": "12060a2667653bf438417b488f31d4aca20c0aac31458820f0275ca6f2ec93a3",
+      "contractSha256": "missing",
+      "failureFingerprint": "6f90b7eee92ab19923ddeeba56538138dbf32f8e0cc198bdfe490c2bb9b282db",
+      "findingCodes": [
+        "contract-missing"
+      ]
+    },
+    {
+      "iteration": 2,
+      "assessedAt": "2026-08-27T02:50:29.267835+00:00",
+      "status": "repair-required",
+      "sourceSha256": "28d8fbbc9d889a3dd708abf3d7bf2b091055b7c2f43fcdcf4d2fb292b9cb5967",
+      "contractSha256": "7d860782332dec50f83ab84c57989fb3ba037709a339e4648915ce89d6bdbf19",
+      "failureFingerprint": "6b8b6fc954b8f217faff7b68ca46ac0eab8e0b37ac008161dee3077108062cdb",
+      "findingCodes": [
+        "chrome-evidence-stale",
+        "chrome-criterion-proof-missing",
+        "chrome-verification-stale",
+        "firefox-evidence-stale",
+        "firefox-criterion-proof-missing",
+        "firefox-firefox-verification-stale",
+        "package-report-stale",
+        "criterion-proof-incomplete",
+        "criterion-proof-incomplete"
+      ]
+    },
+    {
+      "iteration": 3,
+      "assessedAt": "2026-08-27T02:51:04.728668+00:00",
+      "status": "repair-required",
+      "sourceSha256": "8dc55d99852e4f76610b083d3cbf5e191d5ce767d62ba338659407b4c6bc2ca6",
+      "contractSha256": "7d860782332dec50f83ab84c57989fb3ba037709a339e4648915ce89d6bdbf19",
+      "failureFingerprint": "d64efb612539452cd81414cc95a7bbc0156e01ada8e8c916f82f88e5cc872ac1",
+      "findingCodes": [
+        "chrome-evidence-stale",
+        "chrome-verification-stale",
+        "firefox-evidence-stale",
+        "firefox-firefox-verification-stale",
+        "package-report-stale",
+        "criterion-proof-incomplete",
+        "criterion-proof-incomplete"
+      ]
+    },
+    {
+      "iteration": 4,
+      "assessedAt": "2026-08-27T02:52:03.423390+00:00",
+      "status": "passed",
+      "sourceSha256": "ce60b03e023807bb728518924b9df589d70e26f1b8b588b1c023e1a5ed49c7a0",
+      "contractSha256": "7d860782332dec50f83ab84c57989fb3ba037709a339e4648915ce89d6bdbf19",
+      "failureFingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "findingCodes": []
+    },
+    {
+      "iteration": 5,
+      "assessedAt": "2026-08-27T02:59:51.396890+00:00",
+      "status": "passed",
+      "sourceSha256": "ce60b03e023807bb728518924b9df589d70e26f1b8b588b1c023e1a5ed49c7a0",
+      "contractSha256": "7d860782332dec50f83ab84c57989fb3ba037709a339e4648915ce89d6bdbf19",
+      "failureFingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "findingCodes": []
+    },
+    {
+      "iteration": 6,
+      "assessedAt": "2026-08-27T03:03:05.565233+00:00",
+      "status": "passed",
+      "sourceSha256": "ce60b03e023807bb728518924b9df589d70e26f1b8b588b1c023e1a5ed49c7a0",
+      "contractSha256": "7d860782332dec50f83ab84c57989fb3ba037709a339e4648915ce89d6bdbf19",
+      "failureFingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "findingCodes": []
+    },
+    {
+      "iteration": 7,
+      "assessedAt": "2026-08-27T03:06:33.031645+00:00",
+      "status": "passed",
+      "sourceSha256": "ce60b03e023807bb728518924b9df589d70e26f1b8b588b1c023e1a5ed49c7a0",
+      "contractSha256": "7d860782332dec50f83ab84c57989fb3ba037709a339e4648915ce89d6bdbf19",
+      "failureFingerprint": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "findingCodes": []
+    }
+  ]
+}

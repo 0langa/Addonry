@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate Claude/Kimi manual command from canonical Codex workflow."""
+"""Generate Claude/Kimi manual browser-extension command from canonical workflow."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SKILL = ROOT / "skills" / "create-chrome-extension" / "SKILL.md"
 COMMAND = ROOT / "commands" / "create-chrome-extension.md"
 HEADER = """---
-description: Build, test, and install a personal Chrome extension end to end
+description: Build, test, package, and install a personal Chrome/Firefox extension
 argument-hint: <extension request>
 ---
 

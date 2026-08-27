@@ -1,7 +1,7 @@
 {
   "name": "addonry",
-  "version": "0.2.1",
-  "description": "Manual-only tri-client plugin for autonomous end-to-end Chrome extension development.",
+  "version": "0.3.0",
+  "description": "Manual-only tri-client plugin for acceptance-driven Chrome and Firefox extension development, repair-loop verification, and local packaging.",
   "author": {
     "name": "0langa"
   },
@@ -10,10 +10,14 @@
   "license": "MIT",
   "keywords": [
     "chrome",
+    "firefox",
     "browser-extension",
     "manifest-v3",
     "automation",
-    "testing"
+    "testing",
+    "packaging",
+    "quality-loop",
+    "traceability"
   ],
   "commands": "./commands",
   "mcpServers": "./.mcp.json"

@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 3,
+  "slug": "cross-browser-smoke",
+  "name": "Cross Browser Smoke",
+  "createdAt": "2026-08-27T01:48:22.350380+00:00",
+  "status": "implemented",
+  "acceptance": {
+    "popup": "Heading matches manifest and initialized status reports shared runtime ready in Chrome and Firefox."
+  },
+  "browsers": [
+    "chrome",
+    "firefox"
+  ],
+  "architecture": {
+    "manifestVersion": 3,
+    "buildStep": false,
+    "sharedSource": true
+  },
+  "permissions": [],
+  "verification": {
+    "chrome": {
+      "status": "not-run"
+    },
+    "firefox": {
+      "status": "not-run"
+    }
+  },
+  "installation": {
+    "chrome": {
+      "status": "not-installed"
+    },
+    "firefox": {
+      "status": "not-installed"
+    }
+  },
+  "packaging": {
+    "status": "packaged",
+    "targets": [
+      "chrome",
+      "firefox"
+    ],
+    "report": "C:\\Users\\Julius\\source\\repos\\maintained\\Addonry\\tests\\fixtures\\cross-browser-smoke\\.addonry\\package-report.json"
+  },
+  "qualityLoop": {
+    "status": "passed",
+    "contract": ".addonry/contract.json",
+    "state": ".addonry/quality-loop.json",
+    "report": ".addonry/quality-report.json",
+    "coveragePercent": 100.0,
+    "sourceSha256": "ce60b03e023807bb728518924b9df589d70e26f1b8b588b1c023e1a5ed49c7a0"
+  }
+}

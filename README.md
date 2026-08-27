@@ -1,8 +1,8 @@
 # Addonry
 
-Addonry is a manual-only plugin that turns a plain-language request into a tested personal Chrome extension plus truthful installation state. It targets Codex, Claude Code, and Kimi Code from one Forge-managed source.
+Addonry is a manual-only Codex, Claude Code, and Kimi Code plugin that turns an explicit request into a tested personal Manifest V3 extension for desktop Chrome, Firefox, or both. Current source also runs an acceptance-driven repair loop and creates deterministic unsigned ZIP packages when requested.
 
-Invoke Addonry through provider's manual skill syntax, describe browser utility, answer its up-front product questions, then leave implementation decisions to agent. Addonry owns feasibility research, Manifest V3 design, code, permissions, tests, real-Chrome verification, and best-effort installation.
+## Invoke
 
 | Provider | Manual invocation |
 | --- | --- |
@@ -11,47 +11,113 @@ Invoke Addonry through provider's manual skill syntax, describe browser utility,
 | Kimi Code | `/addonry:create-chrome-extension Build ...` |
 | Kimi Code 0.29.x Windows fallback | `/skill:create-chrome-extension Build ...` |
 
-Hard manual-only flags intentionally prevent plain prose such as `Use Addonry ...` from activating hidden skill. This keeps unrelated Chrome work isolated. After invocation, normal prose requirements follow command.
+Command name remains `create-chrome-extension` for compatibility; workflow now asks for `chrome`, `firefox`, or `both`. Hard manual-only flags prevent unqualified prose from activating hidden workflow.
 
 ## Scope
 
-Good fits include page-specific helpers, link extraction, one-click tab actions, formatters, lightweight download helpers, and narrowly scoped cookie import/export utilities. Addonry downscopes or refuses password managers, stealth or policy bypasses, credential harvesting, and other work whose security or complexity exceeds a personal convenience extension.
+Good fits: page helpers, link extraction, tab actions, formatters, focused downloads, and narrow cookie import/export. Addonry downscopes or refuses password managers, surveillance, credential theft, policy bypass, enterprise force-installation, broad traffic interception, and comparable high-assurance work.
 
-Generated extensions live in durable personal storage outside provider caches. On Windows, Addonry prefers `%USERPROFILE%\source\repos\chrome-extensions\<slug>` when `source\repos` exists, otherwise `%USERPROFILE%\chrome-extensions\<slug>`. `ADDONRY_OUTPUT_ROOT` overrides default. Generated projects remain local and are never committed or published unless explicitly requested.
+Generated projects live outside provider caches. Windows default: `%USERPROFILE%\source\repos\browser-extensions\<slug>` when `source\repos` exists, otherwise `%USERPROFILE%\browser-extensions\<slug>`. `ADDONRY_OUTPUT_ROOT` overrides default. Generated projects stay local, untracked, unsigned, and unpublished unless user explicitly requests next action.
 
 ## Manual-only contract
 
 - Codex: `agents/openai.yaml` disables implicit skill invocation.
-- Claude Code: only namespaced slash command is exposed; no model-invocable skill is registered.
-- Kimi Code: `disableModelInvocation: true` in the canonical skill frontmatter blocks implicit model invocation. Namespaced slash command remains canonical; manual-only `/skill:create-chrome-extension` fallback covers Kimi 0.29.x Windows builds that install plugins but omit plugin commands from command registry.
-- No plugin agent is registered for automatic delegation.
-- Bundled MCP tools remain host-visible while the plugin is enabled because current plugin hosts start declared MCP servers eagerly. Addonry instructions permit their use only after explicit invocation.
+- Claude Code: namespaced slash command only; no model-invocable skill.
+- Kimi Code: `disableModelInvocation: true`; namespaced command plus documented 0.29.x fallback.
+- No plugin agent exists for automatic delegation.
+- Bundled Chrome DevTools MCP starts when plugin host enables it; workflow permits use only after explicit Addonry invocation.
 
-## Components
+## Cross-browser model
 
-- `skills/create-chrome-extension/`: intake, architecture, security, testing, and installation workflow.
-- `addonry-chrome-devtools`: pinned Chrome DevTools MCP runtime with usage statistics disabled and an isolated Chrome profile by default.
-- Deterministic helpers: durable extension scaffold, icon generation, security/static validation, real-Chrome Puppeteer toolbar-action verification, source-bound final evidence gate, and fail-closed browser load preflight.
-- Provider manifests generated from `forge.yaml` by Plugin Forge.
+- Shared MV3 source and root development manifest.
+- Chrome background service worker plus Firefox background script declaration when target is `both`.
+- Stable Firefox Gecko ID and explicit AMO data-collection declaration.
+- Target-aware static/final validation; Chrome evidence cannot satisfy Firefox gate.
+- Real Chrome Puppeteer scenario plus Chrome DevTools MCP evidence.
+- Real Firefox Selenium temporary-install scenario plus pinned `web-ext` lint.
+- Browser-specific ZIP manifests generated without changing shared source.
+- Confirmed request contract plus criterion-level current proof; confidence or generic browser pass cannot replace missing behavior evidence.
 
-## Development checks
+See [ROADMAP.md](ROADMAP.md), [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md), [QUALITY_LOOP_PLAN.md](QUALITY_LOOP_PLAN.md), [cross-browser architecture](skills/create-chrome-extension/references/cross-browser-architecture.md), [quality-loop contract](skills/create-chrome-extension/references/quality-loop.md), and [packaging contract](skills/create-chrome-extension/references/packaging.md).
+
+## Scaffold
+
+```powershell
+python skills/create-chrome-extension/scripts/scaffold_extension.py `
+  --slug tab-helper `
+  --name "Tab Helper" `
+  --description "Focused tab utility." `
+  --browser both
+```
+
+## Verify
 
 ```powershell
 python -m unittest discover -s tests -v
 python scripts/validate_repository.py
-forge sync
-node --check skills/create-chrome-extension/scripts/verify_extension.cjs
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-chrome-devtools-mcp.ps1 -SelfTest
-node scripts/smoke_chrome_devtools_mcp.cjs
-powershell -NoProfile -ExecutionPolicy Bypass -File skills/create-chrome-extension/scripts/verify-extension.ps1 `
-  -ExtensionPath tests/fixtures/active-tab-smoke `
-  -ScenarioPath tests/fixtures/active-tab-smoke/tests/e2e.cjs
-python skills/create-chrome-extension/scripts/validate_extension.py tests/fixtures/active-tab-smoke --final-ready
+python skills/create-chrome-extension/scripts/validate_extension.py <extension-path> --release-ready
+
+powershell -NoProfile -ExecutionPolicy Bypass `
+  -File skills/create-chrome-extension/scripts/verify-extension.ps1 `
+  -ExtensionPath <extension-path> `
+  -ScenarioPath <extension-path>\tests\e2e.cjs
+
+powershell -NoProfile -ExecutionPolicy Bypass `
+  -File skills/create-chrome-extension/scripts/verify-firefox-extension.ps1 `
+  -ExtensionPath <extension-path> `
+  -ScenarioPath <extension-path>\tests\firefox_e2e.py
+
+python skills/create-chrome-extension/scripts/validate_extension.py <extension-path> --final-ready
 ```
 
-Official Google Chrome 137+ ignores `--load-extension`. Addonry therefore uses Chrome's supported **Developer Mode** > **Load unpacked** flow for persistent normal-profile installation. Protected browser UI may require one user directory selection. Guarded helper refuses unsupported branded Chrome before changing any process; supported isolated Chromium/Chrome for Testing flows still require browser-level verification.
+Chrome final gate also needs representative Chrome DevTools MCP inspection. Firefox helper uses isolated profile and temporary unsigned install; it does not install into daily Firefox.
 
-Large reusable runtime data and npm caches use mounted `agent-devstorage`: `fast-primary` first, then `bulk-secondary`, under `shared-cache\Addonry\cache`. Source stays in this repository. Without a participating drive, runtime reports fallback and uses `%LOCALAPPDATA%\Addonry\runtime`. FAT32 bulk-secondary storage is supported but first dependency install/module load can be slow; fast-primary remains preferred.
+## Acceptance-driven quality loop
+
+Scaffold creates draft `.addonry\contract.json`. After grouped intake, Addonry records confirmed atomic criteria, implementation/test mappings, requested browser evidence, warning policy, and packaging choice. Browser scenarios return each criterion ID through `criteriaPassed` only after mapped assertions pass.
+
+```powershell
+python skills/create-chrome-extension/scripts/quality_loop.py assess <extension-path>
+python skills/create-chrome-extension/scripts/quality_loop.py cycle <extension-path>
+```
+
+`assess` runs contract/path accounting, release-ready static validation, syntax, discovered unit tests, current evidence checks, package revalidation, and traceability reporting. `cycle` additionally runs stale/missing requested browser gates and refreshes requested packages. Agent repairs first finding and repeats until `.addonry\quality-report.json` says `passed`, coverage is `100.0`, and findings are empty.
+
+Same unchanged failure at configured threshold becomes `strategy-change-required`. Proven external blocker can be recorded without success claim:
+
+```powershell
+python skills/create-chrome-extension/scripts/quality_loop.py block <extension-path> `
+  --code <lower-case-code> `
+  --reason "<specific reproduced blocker>"
+```
+
+## Package
+
+```powershell
+python skills/create-chrome-extension/scripts/package_extension.py `
+  <extension-path> `
+  --target both
+```
+
+Output: `<extension-path>\artifacts\<slug>-<version>-chrome.zip`, matching Firefox ZIP, and `.addonry\package-report.json` with SHA-256 values. Rebuild blocks existing artifact unless `--overwrite` is explicitly supplied. Packaging does not sign, install, upload, or publish.
+
+Chrome Web Store signs Chrome distribution. Normal Firefox Release/Beta requires Mozilla-signed XPI. Those external actions need separate explicit request and credentials.
+
+## Repository development checks
+
+```powershell
+python -m unittest discover -s tests -v
+python scripts/validate_repository.py
+python scripts/sync_manual_command.py
+forge compile
+forge sync
+node --check skills/create-chrome-extension/scripts/verify_extension.cjs
+python -c "from pathlib import Path; compile(Path('skills/create-chrome-extension/scripts/quality_loop.py').read_text(encoding='utf-8'), 'quality_loop.py', 'exec')"
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-chrome-devtools-mcp.ps1 -SelfTest
+node scripts/smoke_chrome_devtools_mcp.cjs
+```
+
+Large reusable browser/runtime output routes through mounted `agent-devstorage` selected by `DRIVE-IDENTITY.json`; source remains in repository. If no participating drive exists, helpers state fallback and use `%LOCALAPPDATA%\Addonry\runtime`.
 
 ## Provider development load
 
@@ -61,4 +127,4 @@ forge install --provider all --mode link
 kimi
 ```
 
-After marketplace release, install `addonry@0langas-plugins`, start new provider session, and use matching manual invocation above. Exact marketplace commands are verified during release and recorded here before handoff.
+After marketplace release, install `addonry@0langas-plugins`, start new provider session, then use matching manual invocation.

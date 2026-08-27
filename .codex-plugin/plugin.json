@@ -1,7 +1,7 @@
 {
   "name": "addonry",
-  "version": "0.2.1",
-  "description": "Manual-only tri-client plugin for autonomous end-to-end Chrome extension development.",
+  "version": "0.3.0",
+  "description": "Manual-only tri-client plugin for acceptance-driven Chrome and Firefox extension development, repair-loop verification, and local packaging.",
   "author": {
     "name": "0langa"
   },
@@ -10,27 +10,33 @@
   "license": "MIT",
   "keywords": [
     "chrome",
+    "firefox",
     "browser-extension",
     "manifest-v3",
     "automation",
-    "testing"
+    "testing",
+    "packaging",
+    "quality-loop",
+    "traceability"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "Addonry",
-    "shortDescription": "Build personal Chrome extensions end to end",
-    "longDescription": "Turns an explicit extension request into a scoped Manifest V3 project, tested in real Chrome, verified with Chrome DevTools, and installed for personal use when possible.",
+    "shortDescription": "Build browser extensions through proof-driven repair loops",
+    "longDescription": "Turns an explicit extension request into a confirmed acceptance contract and scoped Manifest V3 project for Chrome, Firefox, or both; repairs gaps until each criterion has current browser/package proof.",
     "developerName": "0langa",
     "category": "Productivity",
     "capabilities": [
       "Browser",
       "Automation",
-      "Write"
+      "Write",
+      "Packaging",
+      "Quality Assurance"
     ],
     "websiteURL": "https://github.com/0langa/Addonry",
     "defaultPrompt": [
-      "$addonry:create-chrome-extension Build and install a personal Chrome extension from my requirements.",
-      "$addonry:create-chrome-extension Automate this repetitive browser workflow with a small extension."
+      "$addonry:create-chrome-extension Build my personal Chrome and Firefox extension and repair gaps until every confirmed criterion has current proof.",
+      "$addonry:create-chrome-extension Build this browser utility for both browsers and package unsigned ZIPs when ready."
     ],
     "brandColor": "#7C3AED"
   },

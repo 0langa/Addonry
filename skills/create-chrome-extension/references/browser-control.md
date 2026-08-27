@@ -4,6 +4,8 @@
 
 Bundled `addonry-chrome-devtools` server launches current stable Chrome with temporary isolated profile. Usage statistics and update checks are disabled. Use this mode for target-page inspection, reproducible diagnostics, console/network evidence, screenshots, and privacy-safe testing.
 
+Chrome inspection helps design shared page logic but proves only Chrome execution. Firefox target still requires real-Firefox harness and Firefox evidence.
+
 Expected MCP runtime is pinned in `scripts/start-chrome-devtools-mcp.ps1`. If tools are missing, check provider MCP status and run wrapper `-SelfTest`; then reload plugin/new session. Do not silently substitute web search for live target inspection.
 
 ## Tool workflow

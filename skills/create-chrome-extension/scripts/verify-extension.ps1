@@ -10,7 +10,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$puppeteerVersion = '25.4.0'
+$puppeteerVersion = '25.9.0'
 $script:AddonryDevstorageRoot = $null
 
 function Get-AddonryRuntimeRoot {

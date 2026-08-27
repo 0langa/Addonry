@@ -6,7 +6,7 @@ After all implementation gates pass:
 
 1. Confirm extension directory is durable and outside plugin caches/temp.
 2. Detect browser product and major version.
-3. Choose persistent normal Chrome or isolated automated test browser.
+3. Choose persistent normal Chrome/Firefox or isolated automated test browser.
 4. Use browser-level inspection to verify extension ID, enabled state, source path, and representative behavior.
 
 ## Normal Google Chrome
@@ -46,9 +46,23 @@ Helper refuses Google Chrome 137+ before closing or launching anything. For supp
 
 `load-flag-observed-browser-verification-required` means only process command line contained flag. It is not installed/loaded proof. Browser-level verification remains mandatory.
 
+## Mozilla Firefox
+
+Development-only temporary installation:
+
+1. Open `about:debugging`.
+2. Select **This Firefox**.
+3. Select **Load Temporary Add-on**.
+4. Choose project `manifest.json`.
+5. Verify add-on identity and representative flow.
+
+Temporary installation disappears when Firefox closes. Addonry's Firefox harness uses isolated Selenium profile and temporary unsigned XPI; it does not install into daily profile.
+
+Normal Firefox Release/Beta installation requires Mozilla-signed XPI. Packaging alone produces unsigned ZIP and cannot satisfy installation. Signing through AMO is separate explicit distribution action.
+
 ## Safe automation boundary
 
-Use supported host Chrome UI automation for normal-profile install, or isolated-browser automation for testing. If protected UI prevents persistent install, ask user for one `Load unpacked` directory selection. Do not:
+Use supported browser UI for normal-profile install, or isolated-browser automation for testing. If protected UI prevents persistent install, ask user for one browser-specific selection. Do not:
 
 - edit Chrome profile databases;
 - write enterprise force-install registry policies;
@@ -66,6 +80,8 @@ Keep same durable extension path. For persistently UI-installed copy, use extens
 ## Completion states
 
 - `installed-and-verified`: loaded in intended profile and final flow passed.
+- `temporary-firefox-verified`: unsigned package installed in isolated Firefox session and tailored flow passed; not persistent.
+- `firefox-signing-required`: implementation/package passed but daily Firefox requires signed XPI.
 - `blocked-branded-chrome-load-extension-unsupported`: helper detected Google Chrome 137+ and changed no browser process.
 - `load-flag-observed-browser-verification-required`: supported browser process contains flag, but browser-level load is unverified.
 - `staged-browser-was-closed`: Chrome was closed and Addonry correctly did not open it without authorization.

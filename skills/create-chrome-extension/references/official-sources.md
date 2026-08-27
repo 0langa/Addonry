@@ -1,6 +1,6 @@
 # Official Sources
 
-Checked 2026-08-01. Re-open relevant primary page whenever current behavior matters.
+Checked 2026-08-27. Re-open relevant primary page whenever current behavior matters.
 
 ## Chrome Extensions
 
@@ -35,6 +35,23 @@ For branded Google Chrome 137+, do not use `--load-extension`. Do not disable fe
 - Published package (current pinned version check): https://www.npmjs.com/package/chrome-devtools-mcp
 
 Use repository README for current Node/Chrome requirements, client configuration, runtime flags, auto-connect behavior, and security warning for remote debugging.
+
+## Firefox WebExtensions
+
+- Cross-browser design: https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Build_a_cross_browser_extension
+- Chrome incompatibilities: https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Chrome_incompatibilities
+- MV3 background compatibility: https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/background
+- Gecko identity and data declarations: https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/manifest.json/browser_specific_settings
+- `web-ext` development and build: https://extensionworkshop.com/documentation/develop/getting-started-with-web-ext/
+- Signing and distribution: https://extensionworkshop.com/documentation/publish/signing-and-distribution-overview/
+- Selenium Firefox add-on installation/context API: https://www.selenium.dev/selenium/docs/api/py/selenium_webdriver_firefox/selenium.webdriver.firefox.webdriver.html
+- Selenium Manager cache/config: https://www.selenium.dev/documentation/selenium_manager/
+
+## Packaging and distribution
+
+- Chrome ZIP preparation: https://developer.chrome.com/docs/webstore/prepare
+- Chrome distribution restrictions: https://developer.chrome.com/docs/extensions/how-to/distribute
+- Firefox packaging with `web-ext build`: https://extensionworkshop.com/documentation/develop/getting-started-with-web-ext/
 
 ## Provider plugin docs
 

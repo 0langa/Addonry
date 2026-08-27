@@ -1,14 +1,20 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import importlib.util
 import re
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+TOOLS = ROOT / "skills" / "create-chrome-extension" / "scripts"
+sys.path.insert(0, str(TOOLS))
+from validate_extension import source_digest  # noqa: E402
+
 VALIDATOR_SPEC = importlib.util.spec_from_file_location("addonry_repository_validator", ROOT / "scripts/validate_repository.py")
 assert VALIDATOR_SPEC is not None and VALIDATOR_SPEC.loader is not None
 VALIDATOR = importlib.util.module_from_spec(VALIDATOR_SPEC)
@@ -84,6 +90,7 @@ class RepositoryTests(unittest.TestCase):
         for relative in (
             "scripts/start-chrome-devtools-mcp.ps1",
             "skills/create-chrome-extension/scripts/verify-extension.ps1",
+            "skills/create-chrome-extension/scripts/verify-firefox-extension.ps1",
         ):
             script = (ROOT / relative).read_text(encoding="utf-8")
             self.assertIn("agent-devstorage", script)
@@ -92,6 +99,41 @@ class RepositoryTests(unittest.TestCase):
             self.assertNotIn("AvailableFreeSpace", script)
             self.assertIn("routing.log", script)
             self.assertIn("external devstorage unavailable", script)
+
+    def test_cross_browser_and_packaging_contract_is_exposed(self) -> None:
+        skill = (ROOT / "skills/create-chrome-extension/SKILL.md").read_text(encoding="utf-8")
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        forge = (ROOT / "forge.yaml").read_text(encoding="utf-8")
+        for text in (skill, readme):
+            self.assertIn("verify-firefox-extension.ps1", text)
+            self.assertIn("package_extension.py", text)
+            self.assertIn("Chrome", text)
+            self.assertIn("Firefox", text)
+        self.assertIn("- firefox", forge)
+        self.assertIn("- packaging", forge)
+
+    def test_acceptance_driven_quality_loop_is_exposed_and_proven(self) -> None:
+        skill = (ROOT / "skills/create-chrome-extension/SKILL.md").read_text(encoding="utf-8")
+        readme = (ROOT / "README.md").read_text(encoding="utf-8")
+        forge = (ROOT / "forge.yaml").read_text(encoding="utf-8")
+        for text in (skill, readme):
+            self.assertIn("quality_loop.py cycle", text)
+            self.assertIn("criteriaPassed", text)
+            self.assertIn("100", text)
+        self.assertIn("- quality-loop", forge)
+        self.assertIn("- traceability", forge)
+        fixture = ROOT / "tests" / "fixtures" / "cross-browser-smoke" / ".addonry"
+        contract = json.loads((fixture / "contract.json").read_text(encoding="utf-8"))
+        report = json.loads((fixture / "quality-report.json").read_text(encoding="utf-8"))
+        state = json.loads((fixture / "quality-loop.json").read_text(encoding="utf-8"))
+        self.assertEqual(contract["status"], "confirmed")
+        self.assertEqual(report["status"], "passed")
+        self.assertEqual(report["coverage"]["percent"], 100.0)
+        self.assertEqual(report["findings"], [])
+        self.assertEqual(report["sourceSha256"], source_digest(fixture.parent))
+        self.assertEqual(report["contractSha256"], hashlib.sha256((fixture / "contract.json").read_bytes()).hexdigest())
+        self.assertEqual(state["status"], "passed")
+        self.assertTrue(any(item["status"] == "repair-required" for item in state["history"]))
 
     def test_manual_trigger_eval_corpus_is_balanced_and_provider_native(self) -> None:
         cases = json.loads(

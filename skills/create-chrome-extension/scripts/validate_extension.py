@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate a personal unpacked Chrome extension before browser testing."""
+"""Validate a personal Chrome/Firefox extension before browser testing or packaging."""
 
 from __future__ import annotations
 
@@ -10,6 +10,8 @@ import re
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Iterable
+
+from browser_targets import TARGET_CHOICES, project_browsers, validate_firefox_id
 
 VERSION_RE = re.compile(r"^\d+(?:\.\d+){0,3}$")
 INLINE_SCRIPT_RE = re.compile(r"<script(?![^>]*\bsrc\s*=)[^>]*>\s*\S", re.IGNORECASE | re.DOTALL)
@@ -26,7 +28,7 @@ SECRET_RE = re.compile(r"(?i)(api[_-]?key|access[_-]?token|client[_-]?secret|pas
 HIGH_RISK_PERMISSIONS = {"cookies", "debugger", "history", "management", "nativeMessaging", "proxy", "tabs", "webRequest", "webRequestBlocking"}
 BROAD_HOST_PATTERNS = {"<all_urls>", "*://*/*", "http://*/*", "https://*/*"}
 TEXT_SOURCE_SUFFIXES = {".js", ".mjs", ".cjs", ".html", ".htm", ".json", ".css", ".txt", ".yaml", ".yml"}
-IGNORED_DIGEST_DIRECTORIES = {".addonry", ".git", "node_modules"}
+IGNORED_DIGEST_DIRECTORIES = {".addonry", ".git", "__pycache__", "artifacts", "node_modules", "web-ext-artifacts"}
 
 
 @dataclass(frozen=True)
@@ -35,6 +37,29 @@ class Finding:
     code: str
     message: str
     path: str | None = None
+
+
+def _confirmed_contract_has_criteria(root: Path) -> bool:
+    """Allow quality-loop contract to replace legacy project.acceptance map."""
+    contract_path = root / ".addonry" / "contract.json"
+    try:
+        contract = json.loads(contract_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return False
+    return (
+        isinstance(contract, dict)
+        and contract.get("status") == "confirmed"
+        and isinstance(contract.get("criteria"), list)
+        and bool(contract["criteria"])
+    )
+
+
+def contract_digest(root: Path) -> str | None:
+    """Hash confirmed acceptance contract independently from runtime source."""
+    contract_path = root.expanduser().resolve() / ".addonry" / "contract.json"
+    if not _confirmed_contract_has_criteria(root.expanduser().resolve()):
+        return None
+    return hashlib.sha256(contract_path.read_bytes()).hexdigest()
 
 
 def source_digest(root: Path) -> str:
@@ -71,8 +96,12 @@ def _manifest_paths(manifest: dict[str, Any]) -> Iterable[str]:
             yield from (value for value in action_icons.values() if isinstance(value, str))
 
     background = manifest.get("background", {})
-    if isinstance(background, dict) and isinstance(background.get("service_worker"), str):
-        yield background["service_worker"]
+    if isinstance(background, dict):
+        if isinstance(background.get("service_worker"), str):
+            yield background["service_worker"]
+        scripts = background.get("scripts", [])
+        if isinstance(scripts, list):
+            yield from (value for value in scripts if isinstance(value, str))
 
     for key in ("options_page", "devtools_page"):
         if isinstance(manifest.get(key), str):
@@ -117,9 +146,16 @@ def _manifest_paths(manifest: dict[str, Any]) -> Iterable[str]:
                     yield from (value for value in values if isinstance(value, str))
 
 
-def validate_extension(root: Path, *, release_ready: bool = False, final_ready: bool = False) -> list[Finding]:
+def validate_extension(
+    root: Path,
+    *,
+    release_ready: bool = False,
+    final_ready: bool = False,
+    target: str = "auto",
+) -> list[Finding]:
     root = root.expanduser().resolve()
     release_ready = release_ready or final_ready
+    browsers = project_browsers(root, target)
     findings: list[Finding] = []
     manifest_path = root / "manifest.json"
     if not manifest_path.is_file():
@@ -139,6 +175,45 @@ def validate_extension(root: Path, *, release_ready: bool = False, final_ready: 
             findings.append(Finding("error", f"missing-{field}", f"{field} must be a non-empty string", "manifest.json"))
     if isinstance(manifest.get("version"), str) and not VERSION_RE.fullmatch(manifest["version"]):
         findings.append(Finding("error", "invalid-version", "version must contain one to four dot-separated integers", "manifest.json"))
+
+    background = manifest.get("background")
+    if background is not None and not isinstance(background, dict):
+        findings.append(Finding("error", "invalid-background", "background must be an object", "manifest.json"))
+    elif isinstance(background, dict):
+        if "chrome" in browsers and not isinstance(background.get("service_worker"), str):
+            findings.append(Finding("error", "chrome-background-missing", "Chrome target requires background.service_worker", "manifest.json"))
+        scripts = background.get("scripts")
+        if "firefox" in browsers and (
+            not isinstance(scripts, list)
+            or not scripts
+            or any(not isinstance(item, str) for item in scripts)
+        ):
+            findings.append(Finding("error", "firefox-background-missing", "Firefox target requires non-empty background.scripts", "manifest.json"))
+
+    if "firefox" in browsers:
+        browser_settings = manifest.get("browser_specific_settings")
+        gecko = browser_settings.get("gecko") if isinstance(browser_settings, dict) else None
+        if not isinstance(gecko, dict):
+            findings.append(Finding("error", "firefox-settings-missing", "Firefox target requires browser_specific_settings.gecko", "manifest.json"))
+        else:
+            firefox_id = gecko.get("id")
+            try:
+                validate_firefox_id(firefox_id if isinstance(firefox_id, str) else "")
+            except ValueError:
+                findings.append(Finding("error", "firefox-id-invalid", "Firefox target requires valid Gecko extension ID", "manifest.json"))
+            collection = gecko.get("data_collection_permissions")
+            required_collection = collection.get("required") if isinstance(collection, dict) else None
+            if (
+                not isinstance(required_collection, list)
+                or not required_collection
+                or any(not isinstance(item, str) for item in required_collection)
+            ):
+                findings.append(Finding("error", "firefox-data-collection-missing", "Firefox target requires explicit Gecko data collection declaration", "manifest.json"))
+            elif "none" in required_collection and len(required_collection) != 1:
+                findings.append(Finding("error", "firefox-data-collection-invalid", "Firefox data collection value 'none' cannot be combined with other values", "manifest.json"))
+
+        if "side_panel" in manifest:
+            findings.append(Finding("error", "firefox-side-panel-unsupported", "Firefox target cannot use Chrome side_panel manifest key; design a portable UI", "manifest.json"))
 
     for referenced in sorted(set(_manifest_paths(manifest))):
         normalized = referenced.replace("\\", "/")
@@ -234,7 +309,12 @@ def validate_extension(root: Path, *, release_ready: bool = False, final_ready: 
             else:
                 if not isinstance(project, dict) or project.get("status") == "scaffolded":
                     findings.append(Finding("error", "scaffold-status", "project status must move beyond scaffolded before final verification", ".addonry/project.json"))
-                if not isinstance(project, dict) or not isinstance(project.get("acceptance"), dict) or not project["acceptance"]:
+                legacy_acceptance = (
+                    isinstance(project, dict)
+                    and isinstance(project.get("acceptance"), dict)
+                    and bool(project["acceptance"])
+                )
+                if not legacy_acceptance and not _confirmed_contract_has_criteria(root):
                     findings.append(Finding("error", "acceptance-missing", "record concrete acceptance criteria before final verification", ".addonry/project.json"))
 
         starter_popup = "Ready. Replace this scaffold with requested workflow."
@@ -247,8 +327,15 @@ def validate_extension(root: Path, *, release_ready: bool = False, final_ready: 
             findings.append(Finding("error", "starter-e2e", "tailor tests/e2e.cjs to requested behavior", "tests/e2e.cjs"))
         if not scenario_path.is_file() or "exports.run" not in scenario_path.read_text(encoding="utf-8"):
             findings.append(Finding("error", "e2e-contract", "tests/e2e.cjs must export run(context)", "tests/e2e.cjs"))
+        if "firefox" in browsers:
+            firefox_starter = Path(__file__).resolve().parent.parent / "assets" / "starter" / "firefox_e2e.py"
+            firefox_scenario = root / "tests" / "firefox_e2e.py"
+            if not firefox_scenario.is_file() or "def run(" not in firefox_scenario.read_text(encoding="utf-8"):
+                findings.append(Finding("error", "firefox-e2e-contract", "tests/firefox_e2e.py must define run(context)", "tests/firefox_e2e.py"))
+            elif firefox_starter.is_file() and firefox_scenario.read_bytes() == firefox_starter.read_bytes():
+                findings.append(Finding("error", "starter-firefox-e2e", "tailor tests/firefox_e2e.py to requested behavior", "tests/firefox_e2e.py"))
 
-    if final_ready:
+    if final_ready and "chrome" in browsers:
         verification_path = root / ".addonry" / "verification.json"
         if not verification_path.is_file():
             findings.append(Finding("error", "verification-missing", "final-ready validation requires .addonry/verification.json", ".addonry/verification.json"))
@@ -262,6 +349,12 @@ def validate_extension(root: Path, *, release_ready: bool = False, final_ready: 
                     findings.append(Finding("error", "verification-not-passed", "latest real-Chrome verification must have passed", ".addonry/verification.json"))
                 if not isinstance(verification, dict) or verification.get("sourceSha256") != source_digest(root):
                     findings.append(Finding("error", "verification-stale", "verification digest does not match current extension source", ".addonry/verification.json"))
+                expected_contract_sha = contract_digest(root)
+                if expected_contract_sha is not None and (
+                    not isinstance(verification, dict)
+                    or verification.get("contractSha256") != expected_contract_sha
+                ):
+                    findings.append(Finding("error", "verification-contract-stale", "verification does not match current acceptance contract", ".addonry/verification.json"))
                 if not isinstance(verification, dict) or verification.get("scenario") == "generic-popup":
                     findings.append(Finding("error", "verification-generic", "final evidence must use tailored E2E scenario", ".addonry/verification.json"))
                 elif isinstance(verification, dict):
@@ -296,6 +389,50 @@ def validate_extension(root: Path, *, release_ready: bool = False, final_ready: 
                     if not isinstance(errors, list) or errors:
                         findings.append(Finding("error", "browser-errors-present", f"verification contains unresolved {field}", ".addonry/verification.json"))
 
+    if final_ready and "firefox" in browsers:
+        verification_path = root / ".addonry" / "firefox-verification.json"
+        if not verification_path.is_file():
+            findings.append(Finding("error", "firefox-verification-missing", "final-ready validation requires Firefox evidence", ".addonry/firefox-verification.json"))
+        else:
+            try:
+                verification = json.loads(verification_path.read_text(encoding="utf-8"))
+            except (OSError, UnicodeError, json.JSONDecodeError) as error:
+                findings.append(Finding("error", "firefox-verification-invalid", f"Firefox evidence cannot be parsed: {error}", ".addonry/firefox-verification.json"))
+            else:
+                if not isinstance(verification, dict) or verification.get("status") != "passed":
+                    findings.append(Finding("error", "firefox-verification-not-passed", "latest real-Firefox verification must have passed", ".addonry/firefox-verification.json"))
+                if not isinstance(verification, dict) or verification.get("sourceSha256") != source_digest(root):
+                    findings.append(Finding("error", "firefox-verification-stale", "Firefox evidence digest does not match current extension source", ".addonry/firefox-verification.json"))
+                expected_contract_sha = contract_digest(root)
+                if expected_contract_sha is not None and (
+                    not isinstance(verification, dict)
+                    or verification.get("contractSha256") != expected_contract_sha
+                ):
+                    findings.append(Finding("error", "firefox-verification-contract-stale", "Firefox evidence does not match current acceptance contract", ".addonry/firefox-verification.json"))
+                lint = verification.get("lint", {}) if isinstance(verification, dict) else {}
+                if not isinstance(lint, dict) or lint.get("status") != "passed":
+                    findings.append(Finding("error", "firefox-lint-missing", "Firefox web-ext lint must pass", ".addonry/firefox-verification.json"))
+                registration = verification.get("extensionRegistration", {}) if isinstance(verification, dict) else {}
+                if (
+                    not isinstance(registration, dict)
+                    or registration.get("enabled") is not True
+                    or not isinstance(registration.get("id"), str)
+                    or registration.get("name") != manifest.get("name")
+                    or registration.get("version") != manifest.get("version")
+                    or registration.get("temporary") is not True
+                ):
+                    findings.append(Finding("error", "firefox-registration-mismatch", "Firefox temporary registration does not match current extension", ".addonry/firefox-verification.json"))
+                limitations = verification.get("limitations", []) if isinstance(verification, dict) else []
+                if not isinstance(limitations, list) or limitations:
+                    findings.append(Finding("error", "firefox-verification-limitations", "resolve Firefox verification limitations before final-ready claim", ".addonry/firefox-verification.json"))
+                cleanup_warnings = verification.get("cleanupWarnings", []) if isinstance(verification, dict) else []
+                if not isinstance(cleanup_warnings, list) or cleanup_warnings:
+                    findings.append(Finding("error", "firefox-verification-cleanup", "resolve Firefox cleanup warnings before final-ready claim", ".addonry/firefox-verification.json"))
+                for field in ("consoleErrors", "pageErrors", "backgroundErrors"):
+                    errors = verification.get(field, []) if isinstance(verification, dict) else []
+                    if not isinstance(errors, list) or errors:
+                        findings.append(Finding("error", "firefox-errors-present", f"Firefox verification contains unresolved {field}", ".addonry/firefox-verification.json"))
+
     return findings
 
 
@@ -305,11 +442,18 @@ def main() -> int:
     parser.add_argument("--json", action="store_true", dest="as_json")
     parser.add_argument("--release-ready", action="store_true")
     parser.add_argument("--final-ready", action="store_true")
+    parser.add_argument("--browser-target", choices=("auto",) + TARGET_CHOICES, default="auto")
     args = parser.parse_args()
-    findings = validate_extension(args.extension_path, release_ready=args.release_ready, final_ready=args.final_ready)
+    findings = validate_extension(
+        args.extension_path,
+        release_ready=args.release_ready,
+        final_ready=args.final_ready,
+        target=args.browser_target,
+    )
     errors = [finding for finding in findings if finding.level == "error"]
     payload = {
         "extension": str(args.extension_path.expanduser().resolve()),
+        "browsers": list(project_browsers(args.extension_path.expanduser().resolve(), args.browser_target)),
         "errors": len(errors),
         "warnings": sum(finding.level == "warning" for finding in findings),
         "findings": [asdict(finding) for finding in findings],

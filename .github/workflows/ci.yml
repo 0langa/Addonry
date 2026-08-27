@@ -26,20 +26,20 @@ jobs:
           python scripts/validate_repository.py
           node --check scripts/smoke_chrome_devtools_mcp.cjs
           node --check skills/create-chrome-extension/scripts/verify_extension.cjs
-          $errors = $null
-          [System.Management.Automation.Language.Parser]::ParseFile(
-            (Resolve-Path scripts/start-chrome-devtools-mcp.ps1),
-            [ref]$null,
-            [ref]$errors
-          ) | Out-Null
-          if ($errors.Count) { throw ($errors | Out-String) }
-          $errors = $null
-          [System.Management.Automation.Language.Parser]::ParseFile(
-            (Resolve-Path skills/create-chrome-extension/scripts/restart-chrome-with-extension.ps1),
-            [ref]$null,
-            [ref]$errors
-          ) | Out-Null
-          if ($errors.Count) { throw ($errors | Out-String) }
+          $scripts = @(
+            Get-ChildItem scripts -Filter '*.ps1' -File
+            Get-ChildItem skills/create-chrome-extension/scripts -Filter '*.ps1' -File
+          )
+          foreach ($script in $scripts) {
+            $tokens = $null
+            $errors = $null
+            [System.Management.Automation.Language.Parser]::ParseFile(
+              $script.FullName,
+              [ref]$tokens,
+              [ref]$errors
+            ) | Out-Null
+            if ($errors.Count) { throw "$($script.FullName):`n$($errors | Out-String)" }
+          }
       - name: Pinned Chrome DevTools MCP startup
         shell: pwsh
         run: |

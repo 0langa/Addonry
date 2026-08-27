@@ -20,15 +20,34 @@ REQUIRED_FILES = (
     "kimi.plugin.json",
     ".mcp.json",
     ".codex-mcp.json",
+    "ROADMAP.md",
+    "IMPLEMENTATION_PLAN.md",
+    "QUALITY_LOOP_PLAN.md",
     "skills/create-chrome-extension/SKILL.md",
     "skills/create-chrome-extension/agents/openai.yaml",
+    "skills/create-chrome-extension/assets/starter/firefox_e2e.py",
+    "skills/create-chrome-extension/references/cross-browser-architecture.md",
+    "skills/create-chrome-extension/references/packaging.md",
+    "skills/create-chrome-extension/references/quality-loop.md",
+    "skills/create-chrome-extension/scripts/browser_targets.py",
+    "skills/create-chrome-extension/scripts/package_extension.py",
+    "skills/create-chrome-extension/scripts/quality_loop.py",
     "skills/create-chrome-extension/scripts/restart-chrome-with-extension.ps1",
+    "skills/create-chrome-extension/scripts/verify-firefox-extension.ps1",
+    "skills/create-chrome-extension/scripts/verify_firefox_extension.py",
     "commands/create-chrome-extension.md",
     "scripts/start-chrome-devtools-mcp.ps1",
     "scripts/smoke_chrome_devtools_mcp.cjs",
     "scripts/sync_manual_command.py",
     "tests/fixtures/active-tab-smoke/manifest.json",
     "tests/fixtures/active-tab-smoke/tests/e2e.cjs",
+    "tests/fixtures/cross-browser-smoke/manifest.json",
+    "tests/fixtures/cross-browser-smoke/.addonry/contract.json",
+    "tests/fixtures/cross-browser-smoke/.addonry/quality-loop.json",
+    "tests/fixtures/cross-browser-smoke/.addonry/quality-report.json",
+    "tests/fixtures/cross-browser-smoke/tests/e2e.cjs",
+    "tests/fixtures/cross-browser-smoke/tests/firefox_e2e.py",
+    "tests/fixtures/cross-browser-smoke/tests/unit/package_contract.test.cjs",
 )
 
 
@@ -133,13 +152,52 @@ def main() -> int:
     verifier = ROOT / "skills/create-chrome-extension/scripts/verify_extension.cjs"
     if verifier.is_file():
         verifier_text = verifier.read_text(encoding="utf-8")
-        for required_token in ("browser.extensions()", "triggerAction", "extensionRegistration", "cleanupWarnings"):
+        for required_token in ("browser.extensions()", "triggerAction", "extensionRegistration", "cleanupWarnings", "scenarioResult", "contractSha256"):
             if required_token not in verifier_text:
                 errors.append(f"extension verifier missing final-evidence behavior: {required_token}")
 
     validator = ROOT / "skills/create-chrome-extension/scripts/validate_extension.py"
     if validator.is_file() and "--final-ready" not in validator.read_text(encoding="utf-8"):
         errors.append("extension validator lacks final-ready evidence gate")
+
+    quality_loop = ROOT / "skills/create-chrome-extension/scripts/quality_loop.py"
+    if quality_loop.is_file():
+        quality_text = quality_loop.read_text(encoding="utf-8")
+        for required_token in (
+            "contract.json",
+            "criteriaPassed",
+            "strategy-change-required",
+            "quality-report.json",
+            "package-report.json",
+            "record_blocker",
+            "contractSha256",
+        ):
+            if required_token not in quality_text:
+                errors.append(f"quality loop missing contract/proof behavior: {required_token}")
+
+    scaffold = ROOT / "skills/create-chrome-extension/scripts/scaffold_extension.py"
+    if scaffold.is_file():
+        scaffold_text = scaffold.read_text(encoding="utf-8")
+        for required_token in ("contract.json", "quality-loop.json", '"schemaVersion": 3'):
+            if required_token not in scaffold_text:
+                errors.append(f"scaffolder missing quality-loop state: {required_token}")
+
+    packager = ROOT / "skills/create-chrome-extension/scripts/package_extension.py"
+    if packager.is_file():
+        packager_text = packager.read_text(encoding="utf-8")
+        for required_token in ("DETERMINISTIC_TIMESTAMP", "manifest_for_browser", "sourceSha256", "contractSha256", '"signed": False', '"published": False'):
+            if required_token not in packager_text:
+                errors.append(f"package builder missing deterministic/safety behavior: {required_token}")
+
+    firefox_verifier = ROOT / "skills/create-chrome-extension/scripts/verify-firefox-extension.ps1"
+    if firefox_verifier.is_file():
+        firefox_text = firefox_verifier.read_text(encoding="utf-8")
+        for required_token in ("web-ext-$webExtVersion", "selenium==$seleniumVersion", "SE_CACHE_PATH", "firefox-verification.json", "DRIVE-IDENTITY.json"):
+            if required_token not in firefox_text:
+                errors.append(f"Firefox verifier missing pinned/evidence behavior: {required_token}")
+    firefox_runtime = ROOT / "skills/create-chrome-extension/scripts/verify_firefox_extension.py"
+    if firefox_runtime.is_file() and "contractSha256" not in firefox_runtime.read_text(encoding="utf-8"):
+        errors.append("Firefox runtime evidence is not bound to acceptance contract")
 
     restart_helper = ROOT / "skills/create-chrome-extension/scripts/restart-chrome-with-extension.ps1"
     if restart_helper.is_file():

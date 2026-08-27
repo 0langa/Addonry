@@ -1,7 +1,9 @@
 .recall/
 generated/
 tests/fixtures/**/.addonry/verification.json
-tests/fixtures/**/.addonry/artifacts/
+tests/fixtures/**/.addonry/firefox-verification.json
+tests/fixtures/**/.addonry/package-report.json
+tests/fixtures/**/artifacts/
 
 # Dependencies and build output
 node_modules/

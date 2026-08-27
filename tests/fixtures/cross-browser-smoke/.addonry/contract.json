@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "status": "confirmed",
+  "confirmedAt": "2026-08-27T02:50:00+00:00",
+  "requestSummary": "Shared popup initializes identically in Chrome and Firefox, then produces deterministic local packages for both targets.",
+  "browserTargets": [
+    "chrome",
+    "firefox"
+  ],
+  "packagingRequested": true,
+  "qualityPolicy": {
+    "requireZeroWarnings": true,
+    "stallThreshold": 3
+  },
+  "acceptedWarnings": [],
+  "criteria": [
+    {
+      "id": "REQ-001",
+      "kind": "behavior",
+      "requirement": "Shared popup must initialize and display expected identity/status in Chrome and Firefox.",
+      "acceptance": "Both tailored browser scenarios assert heading, ready text, and initialized marker, then report REQ-001.",
+      "appliesTo": [
+        "chrome",
+        "firefox"
+      ],
+      "proof": {
+        "implementation": [
+          "src/popup.html",
+          "src/popup.js"
+        ],
+        "tests": [
+          "tests/e2e.cjs",
+          "tests/firefox_e2e.py"
+        ],
+        "evidence": [
+          "static-validation",
+          "chrome-e2e",
+          "firefox-e2e"
+        ]
+      }
+    },
+    {
+      "id": "REQ-002",
+      "kind": "package",
+      "requirement": "Verified source must produce deterministic unsigned Chrome and Firefox packages.",
+      "acceptance": "Package report matches current source, covers both targets, and independently validated ZIP hashes/layouts pass.",
+      "appliesTo": [
+        "chrome",
+        "firefox"
+      ],
+      "proof": {
+        "implementation": [
+          "manifest.json"
+        ],
+        "tests": [
+          "tests/unit/package_contract.test.cjs"
+        ],
+        "evidence": [
+          "static-validation",
+          "package"
+        ]
+      }
+    }
+  ]
+}

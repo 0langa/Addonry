@@ -1,5 +1,16 @@
 # Changelog
 
+## [Unreleased]
+
+## [0.3.0] - 2026-08-27
+
+- Added confirmed request contracts, persistent iteration state, criterion-to-proof traceability, autonomous gate cycling, stall detection, and honest external-blocker recording.
+- Bound Chrome, Firefox, and package evidence to acceptance-contract/source digests and criterion IDs; fixed source digests to ignore regenerable Python bytecode caches.
+- Added shared desktop Chrome and Firefox MV3 scaffolding with target-aware validation and per-browser evidence gates.
+- Added real Firefox temporary-install verification through Selenium plus target-specific `web-ext lint`.
+- Added deterministic, unsigned Chrome and Firefox ZIP packaging with SHA-256 reports, source binding, runtime-only inventories, and sensitive-file refusal.
+- Kept existing Chrome verification green while updating pinned Puppeteer and hardening active-tab fixture cleanup and action timeouts.
+
 ## [0.2.1] - 2026-08-05
 
 - Enforced Kimi's native manual-only skill gate with `disableModelInvocation: true`, so Addonry remains manual-only on every provider, backed by repository validation and regression coverage.

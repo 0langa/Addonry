@@ -37,7 +37,7 @@ function sourceDigest(root) {
   const hash = crypto.createHash('sha256');
   const visit = (directory) => {
     const entries = fs.readdirSync(directory, { withFileTypes: true })
-      .filter((entry) => !['.addonry', '.git', 'node_modules'].includes(entry.name))
+      .filter((entry) => !['.addonry', '.git', '__pycache__', 'artifacts', 'node_modules', 'web-ext-artifacts'].includes(entry.name))
       .sort((left, right) => left.name.localeCompare(right.name));
     for (const entry of entries) {
       const full = path.join(directory, entry.name);
@@ -54,6 +54,20 @@ function sourceDigest(root) {
   return hash.digest('hex');
 }
 
+function confirmedContractDigest(root) {
+  const contractPath = path.join(root, '.addonry', 'contract.json');
+  if (!fs.existsSync(contractPath)) return null;
+  const payload = fs.readFileSync(contractPath);
+  let contract;
+  try {
+    contract = JSON.parse(payload.toString('utf8'));
+  } catch {
+    return null;
+  }
+  if (contract.status !== 'confirmed' || !Array.isArray(contract.criteria) || contract.criteria.length === 0) return null;
+  return crypto.createHash('sha256').update(payload).digest('hex');
+}
+
 async function run() {
   const args = parseArgs(process.argv.slice(2));
   if (!args.extension || !args.chrome) throw new Error('--extension and --chrome are required');
@@ -64,6 +78,7 @@ async function run() {
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
   assert.equal(manifest.manifest_version, 3, 'Manifest V3 required');
   const sourceSha256 = sourceDigest(extensionRoot);
+  const contractSha256 = confirmedContractDigest(extensionRoot);
 
   const profileParent = path.resolve(process.env.ADDONRY_TEST_PROFILES_ROOT || os.tmpdir());
   fs.mkdirSync(profileParent, { recursive: true });
@@ -81,7 +96,7 @@ async function run() {
   let failureError;
 
   fs.mkdirSync(path.dirname(reportPath), { recursive: true });
-  fs.writeFileSync(reportPath, `${JSON.stringify({ status: 'running', startedAt, extension: extensionRoot, sourceSha256 }, null, 2)}\n`, 'utf8');
+  fs.writeFileSync(reportPath, `${JSON.stringify({ status: 'running', startedAt, extension: extensionRoot, sourceSha256, contractSha256 }, null, 2)}\n`, 'utf8');
 
   try {
     browser = await puppeteer.launch({
@@ -155,7 +170,17 @@ async function run() {
       assert.ok(targetPage, 'triggerAction(targetPage) requires representative page');
       attachPageDiagnostics(targetPage);
       await targetPage.bringToFront();
-      await installedExtension.triggerAction(targetPage);
+      let timeout;
+      try {
+        await Promise.race([
+          installedExtension.triggerAction(targetPage),
+          new Promise((_, reject) => {
+            timeout = setTimeout(() => reject(new Error('Puppeteer Extension.triggerAction timed out after 15000 ms')), 15000);
+          }),
+        ]);
+      } finally {
+        clearTimeout(timeout);
+      }
       activeTabGestureTriggered = true;
     };
 
@@ -199,12 +224,13 @@ async function run() {
     };
 
     let scenario = 'generic-popup';
+    let scenarioResult = {};
     if (args.scenario) {
       scenario = path.resolve(args.scenario);
       delete require.cache[require.resolve(scenario)];
       const loaded = require(scenario);
       assert.equal(typeof loaded.run, 'function', 'Scenario must export run(context)');
-      await loaded.run({
+      const returned = await loaded.run({
         browser,
         extension: installedExtension,
         extensionId,
@@ -216,6 +242,8 @@ async function run() {
         assert,
         artifactDir,
       });
+      assert.ok(returned === undefined || (returned && typeof returned === 'object' && !Array.isArray(returned)), 'Scenario result must be object when returned');
+      scenarioResult = returned || {};
     } else {
       const popup = await openPopup();
       await popup.waitForSelector('body');
@@ -252,6 +280,8 @@ async function run() {
       limitations,
       cleanupWarnings,
       sourceSha256,
+      contractSha256,
+      scenarioResult,
       extensionRegistration,
       activeTabGestureTriggered,
       chromeDevtoolsMcp: mcpProbe,
@@ -265,6 +295,7 @@ async function run() {
       finishedAt: new Date().toISOString(),
       extension: extensionRoot,
       sourceSha256,
+      contractSha256,
       error: redact(error && (error.stack || error)),
       cleanupWarnings,
     };

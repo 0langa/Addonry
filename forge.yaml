@@ -1,7 +1,7 @@
 name: addonry
-version: 0.2.1
-description: Manual-only tri-client plugin for autonomous end-to-end Chrome extension
-  development.
+version: 0.3.0
+description: Manual-only tri-client plugin for acceptance-driven Chrome and Firefox
+  extension development, repair-loop verification, and local packaging.
 providers:
 - claude
 - codex
@@ -51,30 +51,36 @@ metadata:
   repository: https://github.com/0langa/Addonry
   keywords:
   - chrome
+  - firefox
   - browser-extension
   - manifest-v3
   - automation
   - testing
+  - packaging
+  - quality-loop
+  - traceability
   skill_instructions: Addonry is manual-only. Use its workflow and addonry-chrome-devtools
     MCP tools only after the user explicitly runs the provider's create-chrome-extension
-    skill or command, or explicitly names Addonry for Chrome extension creation.
+    skill or command, or explicitly names Addonry for browser extension creation.
   interface:
     display_name: Addonry
-    short_description: Build personal Chrome extensions end to end
-    long_description: Turns an explicit extension request into a scoped Manifest V3
-      project, tested in real Chrome, verified with Chrome DevTools, and installed
-      for personal use when possible.
+    short_description: Build browser extensions through proof-driven repair loops
+    long_description: Turns an explicit extension request into a confirmed acceptance
+      contract and scoped Manifest V3 project for Chrome, Firefox, or both; repairs
+      gaps until each criterion has current browser/package proof.
     developer_name: 0langa
     category: Productivity
     capabilities:
     - Browser
     - Automation
     - Write
+    - Packaging
+    - Quality Assurance
     default_prompt:
-    - $addonry:create-chrome-extension Build and install a personal Chrome extension
-      from my requirements.
-    - $addonry:create-chrome-extension Automate this repetitive browser workflow with
-      a small extension.
+    - $addonry:create-chrome-extension Build my personal Chrome and Firefox extension
+      and repair gaps until every confirmed criterion has current proof.
+    - $addonry:create-chrome-extension Build this browser utility for both browsers
+      and package unsigned ZIPs when ready.
     brand_color: '#7C3AED'
 provider_extras:
   claude: {}
