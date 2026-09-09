@@ -117,7 +117,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/start-chrome-devtool
 node scripts/smoke_chrome_devtools_mcp.cjs
 ```
 
-Large reusable browser/runtime output routes through mounted `agent-devstorage` selected by `DRIVE-IDENTITY.json`; source remains in repository. If no participating drive exists, helpers state fallback and use `%LOCALAPPDATA%\Addonry\runtime`.
+Browser and MCP runtime packages use `%LOCALAPPDATA%\Addonry\runtime`; `ADDONRY_RUNTIME_ROOT` can select another local directory. The helpers leave npm, uv, and Selenium package-cache settings unchanged. Small verification artifacts also stay local. Route unusually large test output separately under the workspace storage policy; runtime dependencies must remain available when external storage is disconnected.
 
 ## Provider development load
 

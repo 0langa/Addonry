@@ -98,7 +98,7 @@ powershell -NoProfile -ExecutionPolicy Bypass `
   -ScenarioPath <extension-path>\tests\e2e.cjs
 ```
 
-Helper uses system Chrome plus pinned Puppeteer, routes reusable runtime to participating `agent-devstorage`, and writes `.addonry/verification.json`. Test normal path plus meaningful edge case; test worker restart when state matters.
+Helper uses system Chrome plus pinned Puppeteer, keeps runtime packages in local application storage, and writes `.addonry/verification.json`. Test normal path plus meaningful edge case; test worker restart when state matters.
 
 If manifest uses `activeTab`, tailored scenario must call `openPopup(targetPage)` or `triggerAction(targetPage)`. Harness uses Puppeteer's extension API to simulate toolbar action and verifies extension ID, enabled state, name, version, and durable source path. Opening popup without target page does not prove an `activeTab` grant. Return `criteriaPassed` only after mapped assertions succeed.
 

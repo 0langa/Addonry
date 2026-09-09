@@ -1,6 +1,9 @@
 # Changelog
 
-## [Unreleased]
+## [0.3.1] - 2026-09-09
+
+- Keep MCP and browser-verifier runtime packages local, and preserve the user's npm, uv, and Selenium cache settings.
+- Preserve LF checkout bytes for evidence-bound test fixtures so Windows line-ending conversion does not invalidate recorded source and contract hashes.
 
 ## [0.3.0] - 2026-08-27
 

@@ -146,8 +146,22 @@ def main() -> int:
             errors.append("Chrome DevTools MCP runtime is not immutably pinned")
         if "CHROME_DEVTOOLS_MCP_NO_USAGE_STATISTICS" not in wrapper_text:
             errors.append("Chrome DevTools MCP usage-statistics opt-out missing")
-        if "routing.log" not in wrapper_text or "--no-audit" not in wrapper_text:
+        if "$env:LOCALAPPDATA" not in wrapper_text or "--no-audit" not in wrapper_text:
             errors.append("Chrome DevTools MCP runtime install lacks reproducible storage hygiene")
+
+    for relative in (
+        "scripts/start-chrome-devtools-mcp.ps1",
+        "skills/create-chrome-extension/scripts/verify-extension.ps1",
+        "skills/create-chrome-extension/scripts/verify-firefox-extension.ps1",
+    ):
+        runtime_script = ROOT / relative
+        if runtime_script.is_file():
+            runtime_text = runtime_script.read_text(encoding="utf-8")
+            if "DRIVE-IDENTITY.json" in runtime_text:
+                errors.append(f"{relative} automatically routes runtime inputs to external storage")
+            for variable in ("NPM_CONFIG_CACHE", "UV_CACHE_DIR", "SE_CACHE_PATH"):
+                if re.search(rf"\$env:{variable}\s*=", runtime_text, re.IGNORECASE):
+                    errors.append(f"{relative} overrides the user's {variable} setting")
 
     verifier = ROOT / "skills/create-chrome-extension/scripts/verify_extension.cjs"
     if verifier.is_file():
@@ -192,7 +206,7 @@ def main() -> int:
     firefox_verifier = ROOT / "skills/create-chrome-extension/scripts/verify-firefox-extension.ps1"
     if firefox_verifier.is_file():
         firefox_text = firefox_verifier.read_text(encoding="utf-8")
-        for required_token in ("web-ext-$webExtVersion", "selenium==$seleniumVersion", "SE_CACHE_PATH", "firefox-verification.json", "DRIVE-IDENTITY.json"):
+        for required_token in ("web-ext-$webExtVersion", "selenium==$seleniumVersion", "firefox-verification.json", "$env:LOCALAPPDATA"):
             if required_token not in firefox_text:
                 errors.append(f"Firefox verifier missing pinned/evidence behavior: {required_token}")
     firefox_runtime = ROOT / "skills/create-chrome-extension/scripts/verify_firefox_extension.py"

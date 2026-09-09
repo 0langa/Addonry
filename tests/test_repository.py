@@ -86,19 +86,17 @@ class RepositoryTests(unittest.TestCase):
             self.assertIn("Test-Path", resolver)
             self.assertIn("Addonry plugin root not found", resolver)
 
-    def test_runtime_uses_agent_devstorage_identity(self) -> None:
-        for relative in (
-            "scripts/start-chrome-devtools-mcp.ps1",
-            "skills/create-chrome-extension/scripts/verify-extension.ps1",
-            "skills/create-chrome-extension/scripts/verify-firefox-extension.ps1",
-        ):
-            script = (ROOT / relative).read_text(encoding="utf-8")
-            self.assertIn("agent-devstorage", script)
-            self.assertIn("DRIVE-IDENTITY.json", script)
-            self.assertIn("shared-cache\\Addonry\\cache\\runtime", script)
-            self.assertNotIn("AvailableFreeSpace", script)
-            self.assertIn("routing.log", script)
-            self.assertIn("external devstorage unavailable", script)
+    def test_fixture_checkout_preserves_evidence_bytes(self) -> None:
+        contract = "tests/fixtures/cross-browser-smoke/.addonry/contract.json"
+        source = "tests/fixtures/cross-browser-smoke/src/popup.js"
+        icon = "tests/fixtures/cross-browser-smoke/icons/icon16.png"
+        result = subprocess.run(
+            ["git", "-c", "core.autocrlf=true", "check-attr", "eol", "text", "--", contract, source, icon],
+            cwd=ROOT, capture_output=True, text=True, check=True,
+        )
+        for path in (contract, source):
+            self.assertIn(f"{path}: eol: lf", result.stdout)
+        self.assertIn(f"{icon}: text: unset", result.stdout)
 
     def test_cross_browser_and_packaging_contract_is_exposed(self) -> None:
         skill = (ROOT / "skills/create-chrome-extension/SKILL.md").read_text(encoding="utf-8")

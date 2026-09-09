@@ -12,46 +12,13 @@ param(
 $ErrorActionPreference = 'Stop'
 $webExtVersion = '10.6.0'
 $seleniumVersion = '4.47.0'
-$script:AddonryDevstorageRoot = $null
 
 function Get-AddonryRuntimeRoot {
     if ($env:ADDONRY_RUNTIME_ROOT) {
         return [System.IO.Path]::GetFullPath($env:ADDONRY_RUNTIME_ROOT)
     }
-    $candidates = foreach ($drive in [System.IO.DriveInfo]::GetDrives()) {
-        if (-not $drive.IsReady) { continue }
-        $devstorage = Join-Path $drive.RootDirectory.FullName 'agent-devstorage'
-        $identityPath = Join-Path $devstorage 'DRIVE-IDENTITY.json'
-        $contractPath = Join-Path $devstorage 'README.md'
-        if (-not (Test-Path -LiteralPath $identityPath) -or -not (Test-Path -LiteralPath $contractPath)) { continue }
-        try {
-            $identity = Get-Content -LiteralPath $identityPath -Raw | ConvertFrom-Json
-            [void](Get-Content -LiteralPath $contractPath -Raw)
-            $priority = switch ($identity.role) {
-                'fast-primary' { 0 }
-                'bulk-secondary' { 1 }
-                default { 2 }
-            }
-            [pscustomobject]@{ Root = $devstorage; Priority = $priority }
-        } catch {
-            continue
-        }
-    }
-    $selected = $candidates | Sort-Object Priority | Select-Object -First 1
-    if ($selected) {
-        $script:AddonryDevstorageRoot = $selected.Root
-        return Join-Path $selected.Root 'shared-cache\Addonry\cache\runtime'
-    }
+    # Runtime packages are startup inputs and must remain available without an external drive.
     return Join-Path $env:LOCALAPPDATA 'Addonry\runtime'
-}
-
-function Write-AddonryRoutingLog([string]$Destination, [string]$Reason) {
-    if (-not $script:AddonryDevstorageRoot) { return }
-    $janitor = Join-Path $script:AddonryDevstorageRoot '_janitor'
-    New-Item -ItemType Directory -Force -Path $janitor | Out-Null
-    $provider = if ($env:CLAUDE_PLUGIN_ROOT) { 'claude' } elseif ($env:KIMI_PLUGIN_ROOT) { 'kimi' } else { 'codex' }
-    $line = "{0} {1} Addonry {2} {3}" -f [DateTimeOffset]::Now.ToString('o'), $provider, $Destination, $Reason
-    Add-Content -LiteralPath (Join-Path $janitor 'routing.log') -Value $line
 }
 
 $extension = [System.IO.Path]::GetFullPath($ExtensionPath)
@@ -87,14 +54,11 @@ if (-not $firefox -or -not (Test-Path -LiteralPath $firefox)) {
 $runtimeRoot = Get-AddonryRuntimeRoot
 $packageRoot = Join-Path $runtimeRoot "web-ext-$webExtVersion"
 $packageJson = Join-Path $packageRoot 'node_modules\web-ext\package.json'
-$npmCache = Join-Path $runtimeRoot 'npm-cache'
-$uvCache = Join-Path $runtimeRoot 'uv-cache'
-$seleniumCache = Join-Path $runtimeRoot 'selenium-cache'
 $artifactsRoot = Join-Path $runtimeRoot 'firefox-runs'
-foreach ($path in @($runtimeRoot, $packageRoot, $npmCache, $uvCache, $seleniumCache, $artifactsRoot)) {
+foreach ($path in @($runtimeRoot, $packageRoot, $artifactsRoot)) {
     if (Test-Path -LiteralPath (Join-Path $path 'KEEP')) { throw "KEEP blocks Firefox runtime path: $path" }
 }
-New-Item -ItemType Directory -Force -Path $runtimeRoot, $npmCache, $uvCache, $seleniumCache, $artifactsRoot | Out-Null
+New-Item -ItemType Directory -Force -Path $runtimeRoot, $artifactsRoot | Out-Null
 
 $webExtEntry = $null
 if (Test-Path -LiteralPath $packageJson) {
@@ -109,12 +73,6 @@ if (Test-Path -LiteralPath $packageJson) {
     }
 }
 if (-not $webExtEntry -or -not (Test-Path -LiteralPath $webExtEntry)) {
-    if ($script:AddonryDevstorageRoot) {
-        Write-AddonryRoutingLog -Destination $packageRoot -Reason "web-ext-$webExtVersion runtime install"
-    } else {
-        Write-Warning "external devstorage unavailable; using $runtimeRoot"
-    }
-    $env:NPM_CONFIG_CACHE = $npmCache
     $npm = Get-Command npm -ErrorAction SilentlyContinue
     if (-not $npm) { throw 'npm is required. Install current Node.js LTS and retry.' }
     $installLog = Join-Path $runtimeRoot 'web-ext-install.log'
@@ -160,13 +118,6 @@ if ($lintExitCode -ne 0) {
 
 $uv = Get-Command uv -ErrorAction SilentlyContinue
 if (-not $uv) { throw 'uv is required for isolated Selenium Firefox verification.' }
-if ($script:AddonryDevstorageRoot) {
-    Write-AddonryRoutingLog -Destination $artifactsRoot -Reason 'real Firefox Selenium verification artifacts'
-} else {
-    Write-Warning "external devstorage unavailable; using $runtimeRoot"
-}
-$env:UV_CACHE_DIR = $uvCache
-$env:SE_CACHE_PATH = $seleniumCache
 $env:SE_AVOID_STATS = 'true'
 $pythonScript = Join-Path $PSScriptRoot 'verify_firefox_extension.py'
 $arguments = @(
