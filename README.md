@@ -38,7 +38,6 @@ Generated projects live outside provider caches. Windows default: `%USERPROFILE%
 - Browser-specific ZIP manifests generated without changing shared source.
 - Confirmed request contract plus criterion-level current proof; confidence or generic browser pass cannot replace missing behavior evidence.
 
-See [ROADMAP.md](ROADMAP.md), [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md), [QUALITY_LOOP_PLAN.md](QUALITY_LOOP_PLAN.md), [cross-browser architecture](skills/create-chrome-extension/references/cross-browser-architecture.md), [quality-loop contract](skills/create-chrome-extension/references/quality-loop.md), and [packaging contract](skills/create-chrome-extension/references/packaging.md).
 
 ## Scaffold
 
