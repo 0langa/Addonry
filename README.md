@@ -22,7 +22,7 @@ Generated projects live outside provider caches. Windows default: `%USERPROFILE%
 ## Manual-only contract
 
 - Codex: `agents/openai.yaml` disables implicit skill invocation.
-- Claude Code: namespaced slash command only; no model-invocable skill.
+- Claude Code: namespaced slash command; the command and the canonical skill both set `disable-model-invocation: true`, so Claude cannot start the workflow on its own.
 - Kimi Code: `disableModelInvocation: true`; namespaced command plus documented 0.29.x fallback.
 - No plugin agent exists for automatic delegation.
 - Bundled Chrome DevTools MCP starts when plugin host enables it; workflow permits use only after explicit Addonry invocation.

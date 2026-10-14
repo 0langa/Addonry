@@ -12,6 +12,7 @@ COMMAND = ROOT / "commands" / "create-chrome-extension.md"
 HEADER = """---
 description: Build, test, package, and install a personal Chrome/Firefox extension
 argument-hint: <extension request>
+disable-model-invocation: true
 ---
 
 Addonry manual activation. Treat following command arguments as user's extension request:

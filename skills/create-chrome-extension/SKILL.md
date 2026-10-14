@@ -2,6 +2,7 @@
 name: create-chrome-extension
 description: Use when user explicitly invokes Addonry or this skill for building personal Chrome and Firefox Manifest V3 utilities, testing browser behavior, or packaging local extension artifacts. Manual-only; never activate from unqualified prose.
 disableModelInvocation: true
+disable-model-invocation: true
 ---
 
 # Create Browser Extension

@@ -111,9 +111,24 @@ def main() -> int:
             r"(?m)^disableModelInvocation:\s*true\s*$", frontmatter.group("content")
         ):
             errors.append("manual-only Kimi policy missing")
+        if frontmatter is None or not re.search(
+            r"(?m)^disable-model-invocation:\s*true\s*$", frontmatter.group("content")
+        ):
+            errors.append("manual-only Claude Code skill policy missing")
         for reference in re.findall(r"\]\((references/[^)]+)\)", skill):
             if not (skill_path.parent / reference).is_file():
                 errors.append(f"missing skill reference: {reference}")
+
+    # Claude Code merges command files into skills, so a command without this flag is model-invocable.
+    command_path = ROOT / "commands/create-chrome-extension.md"
+    if command_path.is_file():
+        command_frontmatter = re.match(
+            r"\A---\s*\n(?P<content>.*?)\n---(?:\s*\n|\Z)", command_path.read_text(encoding="utf-8"), re.DOTALL
+        )
+        if command_frontmatter is None or not re.search(
+            r"(?m)^disable-model-invocation:\s*true\s*$", command_frontmatter.group("content")
+        ):
+            errors.append("manual-only Claude Code command policy missing")
 
     command_sync = subprocess.run(
         ["python", "scripts/sync_manual_command.py"],
