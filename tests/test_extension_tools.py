@@ -42,13 +42,14 @@ class IconTests(unittest.TestCase):
 class ScaffoldTests(unittest.TestCase):
     def test_default_output_prefers_personal_source_repos(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            home = Path(temporary)
+            # Resolve first: default_output_root() expands 8.3 short temp paths (RUNNER~1 on CI).
+            home = Path(temporary).resolve()
             (home / "source" / "repos").mkdir(parents=True)
             self.assertEqual(default_output_root(home), home / "source" / "repos" / "browser-extensions")
 
     def test_default_output_falls_back_to_personal_home(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            home = Path(temporary)
+            home = Path(temporary).resolve()
             self.assertEqual(default_output_root(home), home / "browser-extensions")
 
     def test_environment_output_override_wins(self) -> None:

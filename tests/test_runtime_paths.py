@@ -36,6 +36,8 @@ if (-not $resolver) { throw 'Runtime resolver not found' }
 Get-AddonryRuntimeRoot
 """
         with tempfile.TemporaryDirectory() as temporary:
+            # Resolve first so 8.3 short temp paths (RUNNER~1 on CI) compare equal to PowerShell output.
+            temporary = str(Path(temporary).resolve())
             local = Path(temporary) / "local-app-data"
             env = dict(os.environ, LOCALAPPDATA=str(local), PLUGIN_DATA=str(Path(temporary) / "provider-data"))
             env.pop("ADDONRY_RUNTIME_ROOT", None)
