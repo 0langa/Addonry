@@ -42,6 +42,8 @@ EXCLUDED_ROOT_FILES = frozenset(
 SENSITIVE_SUFFIXES = frozenset({".key", ".p12", ".pem", ".pfx"})
 SENSITIVE_NAME_RE = re.compile(r"(?i)(?:^|[._-])(credential|password|private[-_]?key|secret|token)(?:[._-]|$)")
 DETERMINISTIC_TIMESTAMP = (1980, 1, 1, 0, 0, 0)
+# Same rule scaffold_extension.py applies; the slug becomes part of the ZIP file name.
+SLUG_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
 
 def _runtime_files(root: Path) -> list[Path]:
@@ -162,8 +164,8 @@ def package_extension(
     project_path = root / ".addonry" / "project.json"
     project = json.loads(project_path.read_text(encoding="utf-8"))
     slug = project.get("slug") if isinstance(project, dict) else None
-    if not isinstance(slug, str) or not slug:
-        raise ValueError("project metadata requires slug")
+    if not isinstance(slug, str) or not SLUG_RE.fullmatch(slug):
+        raise ValueError("project metadata requires slug of lower-case letters, digits, and single hyphens")
     version = manifest.get("version")
     if not isinstance(version, str) or not version:
         raise ValueError("manifest requires version")
