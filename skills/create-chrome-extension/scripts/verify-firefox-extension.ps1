@@ -10,7 +10,12 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$webExtVersion = '10.6.0'
+$webExtVersion = '10.7.0'
+# web-ext 10.7.0 pins fx-runner 1.6.0, which pins shell-quote 1.10.0 (GHSA-pqg4-j6r4-53mv, fixed in 1.11.0).
+# fx-runner 1.7.0 changes no code besides moving that pin to 1.11.0, so force the same version. Drop this
+# once web-ext depends on fx-runner 1.7.0 or later. node-forge (GHSA-86w9-cpqp-85rv, via @devicefarmer/adbkit)
+# has no patched release; adbkit only loads for `web-ext run --target=firefox-android`, which this helper never calls.
+$webExtOverrides = [ordered]@{ 'shell-quote' = '1.11.0' }
 $seleniumVersion = '4.47.0'
 
 function Get-AddonryRuntimeRoot {
@@ -19,6 +24,18 @@ function Get-AddonryRuntimeRoot {
     }
     # Runtime packages are startup inputs and must remain available without an external drive.
     return Join-Path $env:LOCALAPPDATA 'Addonry\runtime'
+}
+
+function Get-WebExtOverrideMismatch {
+    param([string]$Root, [System.Collections.IDictionary]$Overrides)
+    foreach ($name in $Overrides.Keys) {
+        $installed = $null
+        $manifest = Join-Path $Root "node_modules\$name\package.json"
+        if (Test-Path -LiteralPath $manifest) {
+            try { $installed = (Get-Content -LiteralPath $manifest -Raw | ConvertFrom-Json).version } catch { $installed = $null }
+        }
+        if ($installed -ne $Overrides[$name]) { "$name $installed, expected $($Overrides[$name])" }
+    }
 }
 
 $extension = [System.IO.Path]::GetFullPath($ExtensionPath)
@@ -65,7 +82,7 @@ if (Test-Path -LiteralPath $packageJson) {
     try {
         $package = Get-Content -LiteralPath $packageJson -Raw | ConvertFrom-Json
         $bin = if ($package.bin -is [string]) { $package.bin } else { $package.bin.'web-ext' }
-        if ($package.version -eq $webExtVersion -and $bin) {
+        if ($package.version -eq $webExtVersion -and $bin -and -not (Get-WebExtOverrideMismatch $packageRoot $webExtOverrides)) {
             $webExtEntry = Join-Path (Split-Path -Parent $packageJson) $bin
         }
     } catch {
@@ -76,13 +93,27 @@ if (-not $webExtEntry -or -not (Test-Path -LiteralPath $webExtEntry)) {
     $npm = Get-Command npm -ErrorAction SilentlyContinue
     if (-not $npm) { throw 'npm is required. Install current Node.js LTS and retry.' }
     $installLog = Join-Path $runtimeRoot 'web-ext-install.log'
+    # npm reads overrides only from the root package.json, so the runtime folder gets its own.
+    $runtimeManifest = [ordered]@{
+        name = 'addonry-web-ext-runtime'
+        private = $true
+        dependencies = [ordered]@{ 'web-ext' = $webExtVersion }
+        overrides = $webExtOverrides
+    }
+    New-Item -ItemType Directory -Force -Path $packageRoot | Out-Null
+    [System.IO.File]::WriteAllText((Join-Path $packageRoot 'package.json'), ($runtimeManifest | ConvertTo-Json -Depth 5), (New-Object System.Text.UTF8Encoding($false)))
     $previousErrorActionPreference = $ErrorActionPreference
     $ErrorActionPreference = 'Continue'
+    # Keep the explicit spec: on Windows, a bare `npm install --prefix <dir>` installs the current directory.
     & $npm.Source install --prefix $packageRoot --no-save --omit=dev --ignore-scripts --no-audit --no-fund "web-ext@$webExtVersion" *> $installLog
     $installExitCode = $LASTEXITCODE
     $ErrorActionPreference = $previousErrorActionPreference
     if ($installExitCode -ne 0 -or -not (Test-Path -LiteralPath $packageJson)) {
         throw "Failed to install pinned web-ext runtime. Inspect $installLog"
+    }
+    $overrideMismatch = @(Get-WebExtOverrideMismatch $packageRoot $webExtOverrides)
+    if ($overrideMismatch.Count) {
+        throw "npm did not apply the web-ext runtime overrides ($($overrideMismatch -join '; ')). Inspect $installLog"
     }
     $package = Get-Content -LiteralPath $packageJson -Raw | ConvertFrom-Json
     $bin = if ($package.bin -is [string]) { $package.bin } else { $package.bin.'web-ext' }

@@ -42,13 +42,14 @@ class IconTests(unittest.TestCase):
 class ScaffoldTests(unittest.TestCase):
     def test_default_output_prefers_personal_source_repos(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            home = Path(temporary)
+            # Resolve first: default_output_root() expands 8.3 short temp paths (RUNNER~1 on CI).
+            home = Path(temporary).resolve()
             (home / "source" / "repos").mkdir(parents=True)
             self.assertEqual(default_output_root(home), home / "source" / "repos" / "browser-extensions")
 
     def test_default_output_falls_back_to_personal_home(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            home = Path(temporary)
+            home = Path(temporary).resolve()
             self.assertEqual(default_output_root(home), home / "browser-extensions")
 
     def test_environment_output_override_wins(self) -> None:
@@ -587,6 +588,17 @@ class PackagingTests(unittest.TestCase):
             (target / "client-secret.pem").write_text("not-a-real-secret", encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "sensitive filename"):
                 package_extension(target)
+
+    def test_refuses_project_slug_that_escapes_output_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            target = self._implemented_project(Path(temporary))
+            project_path = target / ".addonry" / "project.json"
+            project = json.loads(project_path.read_text(encoding="utf-8"))
+            project["slug"] = "../../escaped"
+            project_path.write_text(json.dumps(project), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "slug"):
+                package_extension(target, target="chrome")
+            self.assertEqual(list(Path(temporary).rglob("escaped-*.zip")), [])
 
 
 @unittest.skipUnless(sys.platform == "win32", "PowerShell helper is Windows-specific")

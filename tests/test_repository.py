@@ -40,6 +40,12 @@ class RepositoryTests(unittest.TestCase):
         frontmatter = re.match(r"\A---\s*\n(?P<content>.*?)\n---(?:\s*\n|\Z)", skill, re.DOTALL)
         self.assertIsNotNone(frontmatter)
         self.assertRegex(frontmatter.group("content"), r"(?m)^disableModelInvocation:\s*true\s*$")
+        # Claude Code: skills and command files are both model-invocable unless this flag is set.
+        self.assertRegex(frontmatter.group("content"), r"(?m)^disable-model-invocation:\s*true\s*$")
+        command = (ROOT / "commands/create-chrome-extension.md").read_text(encoding="utf-8")
+        command_frontmatter = re.match(r"\A---\s*\n(?P<content>.*?)\n---(?:\s*\n|\Z)", command, re.DOTALL)
+        self.assertIsNotNone(command_frontmatter)
+        self.assertRegex(command_frontmatter.group("content"), r"(?m)^disable-model-invocation:\s*true\s*$")
         self.assertIn(
             "path: skills/create-chrome-extension/SKILL.md\n    providers:\n    - codex\n    - kimi",
             forge,
