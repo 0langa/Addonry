@@ -1,5 +1,5 @@
 name: addonry
-version: 0.3.1
+version: 0.3.2
 description: Manual-only tri-client plugin for acceptance-driven Chrome and Firefox
   extension development, repair-loop verification, and local packaging.
 providers:

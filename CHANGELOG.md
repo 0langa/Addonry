@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.2] - 2026-10-14
+
+- Keep Claude Code from starting the manual-only workflow on its own: the command and the canonical skill now set `disable-model-invocation: true`, so only `/addonry:create-chrome-extension` runs it.
+- Validate the project slug before packaging, so a crafted slug in `.addonry/project.json` can no longer write the ZIP outside `artifacts/`.
+- Update the Firefox verifier's runtime to web-ext 10.7.0 and force shell-quote 1.11.0, which clears the image-size and critical shell-quote advisories. The node-forge advisory (GHSA-86w9-cpqp-85rv) stays open until a patched release exists; `web-ext lint`, the only command the verifier runs, never loads it.
+
 ## [0.3.1] - 2026-09-09
 
 - Keep MCP and browser-verifier runtime packages local, and preserve the user's npm, uv, and Selenium cache settings.
