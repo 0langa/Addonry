@@ -20,8 +20,6 @@ REQUIRED_FILES = (
     "kimi.plugin.json",
     ".mcp.json",
     ".codex-mcp.json",
-    "ROADMAP.md",
-    "IMPLEMENTATION_PLAN.md",
     "QUALITY_LOOP_PLAN.md",
     "skills/create-chrome-extension/SKILL.md",
     "skills/create-chrome-extension/agents/openai.yaml",
