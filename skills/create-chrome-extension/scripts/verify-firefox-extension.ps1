@@ -10,7 +10,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$webExtVersion = '10.6.0'
+$webExtVersion = '10.7.0'
 $seleniumVersion = '4.47.0'
 
 function Get-AddonryRuntimeRoot {
