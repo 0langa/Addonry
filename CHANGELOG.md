@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.3 - 2026-10-26
+
+- Clarify setup, platform requirements, and marketplace presentation.
+- Publish through https://github.com/0langa/plugins; Kimi compatibility is legacy.
+
 ## [0.3.2] - 2026-10-14
 
 - Keep Claude Code from starting the manual-only workflow on its own: the command and the canonical skill now set `disable-model-invocation: true`, so only `/addonry:create-chrome-extension` runs it.

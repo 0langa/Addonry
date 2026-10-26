@@ -1,7 +1,6 @@
 name: addonry
-version: 0.3.2
-description: Manual-only tri-client plugin for acceptance-driven Chrome and Firefox
-  extension development, repair-loop verification, and local packaging.
+version: 0.3.3
+description: Build and test personal Chrome and Firefox extensions.
 providers:
 - claude
 - codex
@@ -64,12 +63,12 @@ metadata:
     skill or command, or explicitly names Addonry for browser extension creation.
   interface:
     display_name: Addonry
-    short_description: Build browser extensions through proof-driven repair loops
-    long_description: Turns an explicit extension request into a confirmed acceptance
-      contract and scoped Manifest V3 project for Chrome, Firefox, or both; repairs
-      gaps until each criterion has current browser/package proof.
+    short_description: Build and test personal Chrome and Firefox extensions.
+    long_description: Build and test personal Chrome and Firefox extensions. Requires
+      Windows PowerShell, Python, Node.js, and the target browsers. Kimi compatibility
+      is legacy.
     developer_name: 0langa
-    category: Productivity
+    category: Developer Tools
     capabilities:
     - Browser
     - Automation
@@ -82,6 +81,8 @@ metadata:
     - $addonry:create-chrome-extension Build this browser utility for both browsers
       and package unsigned ZIPs when ready.
     brand_color: '#7C3AED'
+    composer_icon: ./assets/icon.png
+    logo: ./assets/logo.png
 provider_extras:
   claude: {}
   codex: {}

@@ -1,6 +1,8 @@
 # Addonry
 
-Addonry is a manual-only Codex, Claude Code, and Kimi Code plugin that turns an explicit request into a tested personal Manifest V3 extension for desktop Chrome, Firefox, or both. Current source also runs an acceptance-driven repair loop and creates deterministic unsigned ZIP packages when requested.
+Addonry builds and tests personal Chrome and Firefox extensions from an explicit request. It can repair an existing extension and prepare local ZIP packages when asked.
+
+The bundled browser-tools launcher requires Windows and Windows PowerShell. Python, Node.js, and the target browsers are also required. Codex and Claude Code are maintained; Kimi compatibility is legacy and is not actively tested.
 
 ## Invoke
 
