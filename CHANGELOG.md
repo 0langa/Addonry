@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.3.4 - 2026-10-26
+
+- Replace the plugin icon and logo with the approved Folded Crest artwork and include its SVG source.
+
+
 ## 0.3.3 - 2026-10-26
 
 - Clarify setup, platform requirements, and marketplace presentation.

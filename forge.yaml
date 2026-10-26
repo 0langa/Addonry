@@ -1,5 +1,5 @@
 name: addonry
-version: 0.3.3
+version: 0.3.4
 description: Build and test personal Chrome and Firefox extensions.
 providers:
 - claude
