@@ -20,7 +20,6 @@ REQUIRED_FILES = (
     "kimi.plugin.json",
     ".mcp.json",
     ".codex-mcp.json",
-    "QUALITY_LOOP_PLAN.md",
     "skills/create-chrome-extension/SKILL.md",
     "skills/create-chrome-extension/agents/openai.yaml",
     "skills/create-chrome-extension/assets/starter/firefox_e2e.py",
