@@ -445,8 +445,11 @@ class QualityLoopTests(unittest.TestCase):
             target = self._ready_project(Path(temporary))
             (target / "src" / "popup.js").write_text("document.body.dataset.changed = 'true';\n", encoding="utf-8")
             codes = {item["code"] for item in assess_quality(target)["findings"]}
-            self.assertIn("chrome-evidence-stale", codes)
-            self.assertIn("firefox-evidence-stale", codes)
+            self.assertIn("chrome-verification-stale", codes)
+            self.assertIn("firefox-verification-stale", codes)
+            self.assertNotIn("chrome-evidence-stale", codes)
+            self.assertNotIn("firefox-evidence-stale", codes)
+            self.assertNotIn("firefox-firefox-verification-stale", codes)
             self.assertIn("package-report-stale", codes)
 
     def test_contract_change_invalidates_browser_and_package_proof(self) -> None:
@@ -457,8 +460,10 @@ class QualityLoopTests(unittest.TestCase):
             contract["criteria"][0]["acceptance"] = "Changed acceptance requires new proof."
             contract_path.write_text(json.dumps(contract), encoding="utf-8")
             codes = {item["code"] for item in assess_quality(target)["findings"]}
-            self.assertIn("chrome-evidence-contract-stale", codes)
-            self.assertIn("firefox-evidence-contract-stale", codes)
+            self.assertIn("chrome-verification-contract-stale", codes)
+            self.assertIn("firefox-verification-contract-stale", codes)
+            self.assertNotIn("chrome-evidence-contract-stale", codes)
+            self.assertNotIn("firefox-evidence-contract-stale", codes)
             self.assertIn("package-report-contract-stale", codes)
 
     def test_python_bytecode_cache_does_not_invalidate_source_proof(self) -> None:
