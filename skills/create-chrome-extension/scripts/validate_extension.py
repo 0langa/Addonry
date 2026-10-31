@@ -409,6 +409,10 @@ def validate_extension(
                     or verification.get("contractSha256") != expected_contract_sha
                 ):
                     findings.append(Finding("error", "firefox-verification-contract-stale", "Firefox evidence does not match current acceptance contract", ".addonry/firefox-verification.json"))
+                scenario = verification.get("scenario") if isinstance(verification, dict) else None
+                expected_scenario = (root / "tests" / "firefox_e2e.py").resolve()
+                if not isinstance(scenario, str) or Path(scenario).expanduser().resolve() != expected_scenario:
+                    findings.append(Finding("error", "firefox-verification-scenario-mismatch", "Firefox verification must use this extension's tests/firefox_e2e.py", ".addonry/firefox-verification.json"))
                 lint = verification.get("lint", {}) if isinstance(verification, dict) else {}
                 if not isinstance(lint, dict) or lint.get("status") != "passed":
                     findings.append(Finding("error", "firefox-lint-missing", "Firefox web-ext lint must pass", ".addonry/firefox-verification.json"))

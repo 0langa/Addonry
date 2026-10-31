@@ -32,6 +32,13 @@ SECRET_OUTPUT_RE = re.compile(
     r"(?i)(api[_-]?key|access[_-]?token|client[_-]?secret|password)(\s*[:=]\s*)[^\s,;]+"
 )
 HISTORY_LIMIT = 20
+# Specific repair text for final-ready evidence findings, keyed by validator code without the browser prefix.
+FINAL_READY_REPAIRS = {
+    "verification-not-passed": "Inspect {filename}, repair failure, and rerun browser gate.",
+    "verification-stale": "Rerun {browser} verification after latest source change.",
+    "verification-contract-stale": "Rerun {browser} verification after latest contract confirmation.",
+    "verification-scenario-mismatch": "Run {scenario} for this extension.",
+}
 
 
 @dataclass(frozen=True)
@@ -445,25 +452,18 @@ def _browser_evidence(root: Path, browser: str) -> tuple[dict[str, Any], list[Lo
     if evidence is None:
         findings.append(LoopFinding("browser", f"{browser}-evidence-missing", f"{browser.title()} evidence {error}", f"Run tailored real-{browser} verification.", path=f".addonry/{filename}"))
         return {"status": "missing", "criteriaPassed": []}, findings, passed
-    if evidence.get("status") != "passed":
-        findings.append(LoopFinding("browser", f"{browser}-evidence-failed", f"Latest {browser.title()} verification did not pass", f"Inspect {filename}, repair failure, and rerun browser gate.", path=f".addonry/{filename}"))
-    if evidence.get("sourceSha256") != source_digest(root):
-        findings.append(LoopFinding("browser", f"{browser}-evidence-stale", f"{browser.title()} evidence does not match current source", f"Rerun {browser} verification after latest source change.", path=f".addonry/{filename}"))
-    if evidence.get("contractSha256") != _json_digest(root / CONTRACT_RELATIVE):
-        findings.append(LoopFinding("browser", f"{browser}-evidence-contract-stale", f"{browser.title()} evidence does not match current acceptance contract", f"Rerun {browser} verification after latest contract confirmation.", path=f".addonry/{filename}"))
-    expected_scenario = (root / "tests" / ("e2e.cjs" if browser == "chrome" else "firefox_e2e.py")).resolve()
-    scenario = evidence.get("scenario")
-    if not isinstance(scenario, str) or Path(scenario).expanduser().resolve() != expected_scenario:
-        findings.append(LoopFinding("browser", f"{browser}-scenario-mismatch", f"{browser.title()} evidence used wrong scenario", f"Run {expected_scenario.relative_to(root).as_posix()} for this extension.", path=f".addonry/{filename}"))
     scenario_result = evidence.get("scenarioResult")
     criteria_passed = scenario_result.get("criteriaPassed") if isinstance(scenario_result, dict) else None
     if not isinstance(criteria_passed, list) or any(not isinstance(item, str) for item in criteria_passed):
         findings.append(LoopFinding("browser", f"{browser}-criterion-proof-missing", f"{browser.title()} scenario did not report criteriaPassed", "Return criteriaPassed only after tailored scenario assertions succeed.", path=f".addonry/{filename}"))
     else:
         passed = set(criteria_passed)
+    scenario = "tests/e2e.cjs" if browser == "chrome" else "tests/firefox_e2e.py"
     final_errors = [item for item in validate_extension(root, final_ready=True, target=browser) if item.level == "error"]
     for item in final_errors:
-        findings.append(LoopFinding("final-ready", f"{browser}-{item.code}", item.message, f"Resolve final-ready {browser} evidence gate.", path=item.path))
+        base = item.code.removeprefix(f"{browser}-")
+        repair = FINAL_READY_REPAIRS.get(base, "Resolve final-ready {browser} evidence gate.")
+        findings.append(LoopFinding("final-ready", f"{browser}-{base}", item.message, repair.format(browser=browser, filename=filename, scenario=scenario), path=item.path))
     status = "passed" if not findings else "failed"
     return {"status": status, "criteriaPassed": sorted(passed), "path": f".addonry/{filename}"}, findings, passed
 

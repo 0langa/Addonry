@@ -28,14 +28,12 @@
       "status": "repair-required",
       "sourceSha256": "28d8fbbc9d889a3dd708abf3d7bf2b091055b7c2f43fcdcf4d2fb292b9cb5967",
       "contractSha256": "7d860782332dec50f83ab84c57989fb3ba037709a339e4648915ce89d6bdbf19",
-      "failureFingerprint": "6b8b6fc954b8f217faff7b68ca46ac0eab8e0b37ac008161dee3077108062cdb",
+      "failureFingerprint": "6fcf3956e5d5c896a1f52ce4c57e85ca9ea76e5acc6d9ed380ae233e59854fda",
       "findingCodes": [
-        "chrome-evidence-stale",
         "chrome-criterion-proof-missing",
         "chrome-verification-stale",
-        "firefox-evidence-stale",
         "firefox-criterion-proof-missing",
-        "firefox-firefox-verification-stale",
+        "firefox-verification-stale",
         "package-report-stale",
         "criterion-proof-incomplete",
         "criterion-proof-incomplete"
@@ -47,12 +45,10 @@
       "status": "repair-required",
       "sourceSha256": "8dc55d99852e4f76610b083d3cbf5e191d5ce767d62ba338659407b4c6bc2ca6",
       "contractSha256": "7d860782332dec50f83ab84c57989fb3ba037709a339e4648915ce89d6bdbf19",
-      "failureFingerprint": "d64efb612539452cd81414cc95a7bbc0156e01ada8e8c916f82f88e5cc872ac1",
+      "failureFingerprint": "3c0de7ffd7a0a3eab8266b27982a7a4e7b83d052e3aa7a349583c4e222090a1b",
       "findingCodes": [
-        "chrome-evidence-stale",
         "chrome-verification-stale",
-        "firefox-evidence-stale",
-        "firefox-firefox-verification-stale",
+        "firefox-verification-stale",
         "package-report-stale",
         "criterion-proof-incomplete",
         "criterion-proof-incomplete"

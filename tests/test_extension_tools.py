@@ -444,9 +444,15 @@ class QualityLoopTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             target = self._ready_project(Path(temporary))
             (target / "src" / "popup.js").write_text("document.body.dataset.changed = 'true';\n", encoding="utf-8")
-            codes = {item["code"] for item in assess_quality(target)["findings"]}
-            self.assertIn("chrome-evidence-stale", codes)
-            self.assertIn("firefox-evidence-stale", codes)
+            report = assess_quality(target)
+            codes = {item["code"] for item in report["findings"]}
+            self.assertIn("chrome-verification-stale", codes)
+            self.assertIn("firefox-verification-stale", codes)
+            repairs = {item["code"]: item["repair"] for item in report["findings"]}
+            self.assertEqual(repairs["chrome-verification-stale"], "Rerun chrome verification after latest source change.")
+            self.assertNotIn("chrome-evidence-stale", codes)
+            self.assertNotIn("firefox-evidence-stale", codes)
+            self.assertNotIn("firefox-firefox-verification-stale", codes)
             self.assertIn("package-report-stale", codes)
 
     def test_contract_change_invalidates_browser_and_package_proof(self) -> None:
@@ -457,9 +463,29 @@ class QualityLoopTests(unittest.TestCase):
             contract["criteria"][0]["acceptance"] = "Changed acceptance requires new proof."
             contract_path.write_text(json.dumps(contract), encoding="utf-8")
             codes = {item["code"] for item in assess_quality(target)["findings"]}
-            self.assertIn("chrome-evidence-contract-stale", codes)
-            self.assertIn("firefox-evidence-contract-stale", codes)
+            self.assertIn("chrome-verification-contract-stale", codes)
+            self.assertIn("firefox-verification-contract-stale", codes)
+            self.assertNotIn("chrome-evidence-contract-stale", codes)
+            self.assertNotIn("firefox-evidence-contract-stale", codes)
             self.assertIn("package-report-contract-stale", codes)
+
+    def test_evidence_for_another_scenario_is_reported_once_per_browser(self) -> None:
+        cases = (
+            ("chrome", "verification.json", "tests/e2e.cjs"),
+            ("firefox", "firefox-verification.json", "tests/firefox_e2e.py"),
+        )
+        for browser, filename, scenario in cases:
+            with self.subTest(browser=browser), tempfile.TemporaryDirectory() as temporary:
+                target = self._ready_project(Path(temporary))
+                evidence_path = target / ".addonry" / filename
+                evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+                evidence["scenario"] = str((target / "tests" / "other-scenario").resolve())
+                evidence_path.write_text(json.dumps(evidence), encoding="utf-8")
+                report = assess_quality(target)
+                self.assertEqual(report["status"], "repair-required", report["findings"])
+                mismatches = [item for item in report["findings"] if "scenario-mismatch" in item["code"]]
+                self.assertEqual([item["code"] for item in mismatches], [f"{browser}-verification-scenario-mismatch"])
+                self.assertEqual(mismatches[0]["repair"], f"Run {scenario} for this extension.")
 
     def test_python_bytecode_cache_does_not_invalidate_source_proof(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
