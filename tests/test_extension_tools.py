@@ -422,7 +422,7 @@ class QualityLoopTests(unittest.TestCase):
             package_extension(target)
         return target
 
-    def test_confirmed_contract_can_replace_legacy_acceptance_map(self) -> None:
+    def test_confirmed_contract_clears_acceptance_missing(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             target = self._ready_project(Path(temporary), packaging=False)
             codes = {item.code for item in validate_extension(target, release_ready=True)}
