@@ -4,7 +4,7 @@
 
 | Layer | Evidence |
 | --- | --- |
-| Static | manifest parses, paths exist, MV3/CSP/security checks pass, starter markers removed, acceptance metadata complete |
+| Static | manifest parses, paths exist, MV3/CSP/security checks pass, starter markers removed, confirmed contract has criteria |
 | Syntax | every shipped JS file parses |
 | Unit | pure transforms and edge cases pass |
 | Chrome E2E | unpacked extension loaded into real Chrome and tailored JavaScript scenario passes |
@@ -80,4 +80,4 @@ After tailored tests exist, run `quality_loop.py cycle <extension-path>`. Contro
 
 ## Evidence record
 
-Update `.addonry/project.json` with permissions rationale, requested browsers, browser versions, commands, and final status. Confirmed criteria live in `.addonry/contract.json`; controller writes `.addonry/quality-loop.json` and `.addonry/quality-report.json`. Chrome harness writes `.addonry/verification.json`; Firefox harness writes `.addonry/firefox-verification.json`. Keep evidence local with generated extension.
+Confirmed criteria live in `.addonry/contract.json`. Final-ready reads `.addonry/verification.json` and `.addonry/firefox-verification.json`. The quality gate reads `.addonry/quality-report.json`. Keep evidence local with generated extension.

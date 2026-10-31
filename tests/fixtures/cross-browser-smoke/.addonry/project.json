@@ -39,7 +39,7 @@
       "chrome",
       "firefox"
     ],
-    "report": "C:\\Users\\Julius\\source\\repos\\maintained\\Addonry\\tests\\fixtures\\cross-browser-smoke\\.addonry\\package-report.json"
+    "report": ".addonry/package-report.json"
   },
   "qualityLoop": {
     "status": "passed",

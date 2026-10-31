@@ -3,9 +3,6 @@
   "slug": "active-tab-smoke",
   "name": "Addonry Active Tab Smoke",
   "status": "implemented",
-  "acceptance": {
-    "toolbarGesture": "grants activeTab and reads representative page title"
-  },
   "architecture": {
     "manifestVersion": 3,
     "buildStep": false

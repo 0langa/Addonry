@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "status": "confirmed",
+  "confirmedAt": "2026-08-27T02:50:00+00:00",
+  "requestSummary": "Toolbar gesture grants activeTab and the popup reads the representative page title.",
+  "browserTargets": [
+    "chrome"
+  ],
+  "packagingRequested": false,
+  "qualityPolicy": {
+    "requireZeroWarnings": true,
+    "stallThreshold": 3
+  },
+  "acceptedWarnings": [],
+  "criteria": [
+    {
+      "id": "REQ-001",
+      "kind": "behavior",
+      "requirement": "Toolbar action on a representative page grants activeTab and the popup shows that page title.",
+      "acceptance": "Tailored Chrome scenario opens a local page, invokes the toolbar popup, and asserts the page title.",
+      "appliesTo": [
+        "chrome"
+      ],
+      "proof": {
+        "implementation": [
+          "popup.html",
+          "popup.js"
+        ],
+        "tests": [
+          "tests/e2e.cjs"
+        ],
+        "evidence": [
+          "static-validation",
+          "chrome-e2e"
+        ]
+      }
+    }
+  ]
+}

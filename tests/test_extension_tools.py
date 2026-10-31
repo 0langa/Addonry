@@ -83,8 +83,11 @@ class ScaffoldTests(unittest.TestCase):
             project = json.loads((target / ".addonry" / "project.json").read_text(encoding="utf-8"))
             contract = json.loads((target / ".addonry" / "contract.json").read_text(encoding="utf-8"))
             self.assertEqual(project["schemaVersion"], 3)
+            self.assertEqual(project["slug"], "tab-helper")
+            self.assertEqual(project["status"], "scaffolded")
             self.assertEqual(project["browsers"], ["chrome", "firefox"])
-            self.assertEqual(project["qualityLoop"]["status"], "not-run")
+            for unread in ("acceptance", "architecture", "permissions", "verification", "installation", "packaging", "qualityLoop"):
+                self.assertNotIn(unread, project)
             self.assertEqual(contract["status"], "draft")
             self.assertEqual(contract["browserTargets"], ["chrome", "firefox"])
 
@@ -223,11 +226,15 @@ class ValidatorTests(unittest.TestCase):
             project_path = root / ".addonry" / "project.json"
             project = json.loads(project_path.read_text(encoding="utf-8"))
             project["status"] = "implemented"
-            project["acceptance"] = {"popup": "opens"}
             project_path.write_text(json.dumps(project), encoding="utf-8")
+            (root / ".addonry" / "contract.json").write_text(
+                json.dumps({"status": "confirmed", "criteria": [{"id": "REQ-001"}]}),
+                encoding="utf-8",
+            )
             evidence = {
                 "status": "passed",
                 "sourceSha256": source_digest(root),
+                "contractSha256": contract_digest(root),
                 "scenario": str(root / "tests" / "e2e.cjs"),
                 "limitations": [],
                 "cleanupWarnings": [],
@@ -255,7 +262,7 @@ class ValidatorTests(unittest.TestCase):
             (root / "tests" / "e2e.cjs").write_text("exports.run = async ({ assert }) => { assert.ok(true); };\n", encoding="utf-8")
             project_path = root / ".addonry" / "project.json"
             project = json.loads(project_path.read_text(encoding="utf-8"))
-            project.update({"status": "implemented", "acceptance": {"popup": "opens"}})
+            project["status"] = "implemented"
             project_path.write_text(json.dumps(project), encoding="utf-8")
             evidence = {
                 "status": "passed",
@@ -379,7 +386,6 @@ class QualityLoopTests(unittest.TestCase):
         project_path = target / ".addonry" / "project.json"
         project = json.loads(project_path.read_text(encoding="utf-8"))
         project["status"] = "implemented"
-        project["acceptance"] = {}
         project_path.write_text(json.dumps(project), encoding="utf-8")
         contract = {
             "schemaVersion": 1,
@@ -547,8 +553,12 @@ class PackagingTests(unittest.TestCase):
         )
         project_path = target / ".addonry" / "project.json"
         project = json.loads(project_path.read_text(encoding="utf-8"))
-        project.update({"status": "implemented", "acceptance": {"popup": "opens"}})
+        project["status"] = "implemented"
         project_path.write_text(json.dumps(project), encoding="utf-8")
+        (target / ".addonry" / "contract.json").write_text(
+            json.dumps({"status": "confirmed", "criteria": [{"id": "REQ-001"}]}),
+            encoding="utf-8",
+        )
         return target
 
     def test_packages_target_specific_manifests_without_development_files(self) -> None:

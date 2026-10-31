@@ -145,19 +145,7 @@ def scaffold(
         "name": name,
         "createdAt": created_at,
         "status": "scaffolded",
-        "acceptance": {},
         "browsers": list(browsers),
-        "architecture": {"manifestVersion": 3, "buildStep": False, "sharedSource": True},
-        "permissions": [],
-        "verification": {target: {"status": "not-run"} for target in browsers},
-        "installation": {target: {"status": "not-installed"} for target in browsers},
-        "packaging": {"status": "not-packaged", "targets": list(browsers)},
-        "qualityLoop": {
-            "status": "not-run",
-            "contract": ".addonry/contract.json",
-            "state": ".addonry/quality-loop.json",
-            "report": ".addonry/quality-report.json",
-        },
     }
     (metadata_dir / "project.json").write_text(json.dumps(project, indent=2) + "\n", encoding="utf-8", newline="\n")
 

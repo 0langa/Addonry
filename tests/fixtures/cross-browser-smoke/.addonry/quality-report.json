@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "status": "passed",
   "assessedAt": "2026-08-27T03:06:33.031645+00:00",
-  "extension": "C:\\Users\\Julius\\source\\repos\\maintained\\Addonry\\tests\\fixtures\\cross-browser-smoke",
+  "extension": "tests/fixtures/cross-browser-smoke",
   "sourceSha256": "ce60b03e023807bb728518924b9df589d70e26f1b8b588b1c023e1a5ed49c7a0",
   "contractSha256": "7d860782332dec50f83ab84c57989fb3ba037709a339e4648915ce89d6bdbf19",
   "requestSummary": "Shared popup initializes identically in Chrome and Firefox, then produces deterministic local packages for both targets.",
@@ -31,7 +31,7 @@
         [
           "node",
           "--test",
-          "C:\\Users\\Julius\\source\\repos\\maintained\\Addonry\\tests\\fixtures\\cross-browser-smoke\\tests\\unit\\package_contract.test.cjs"
+          "tests/unit/package_contract.test.cjs"
         ]
       ]
     },
