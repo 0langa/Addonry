@@ -43,7 +43,7 @@ Low/medium personal utilities include link extraction, formatters, tab actions, 
 
 Read [cross-browser-architecture.md](references/cross-browser-architecture.md) for relevant API family. Consult [official-sources.md](references/official-sources.md) whenever API shape, browser support, install behavior, packaging, or provider configuration is uncertain. Prefer browser-vendor and provider primary sources.
 
-Default new projects to `both`, MV3, vanilla JS/HTML/CSS, shared background file with Chrome service-worker and Firefox script declarations, portable API subset, `activeTab` + `scripting` for user-triggered work, optional access where feasible, bundled code, and narrow matches. Record targets, architecture, acceptance, permissions, verification, installation, packaging, and limitations in `.addonry/project.json`.
+Default new projects to `both`, MV3, vanilla JS/HTML/CSS, shared background file with Chrome service-worker and Firefox script declarations, portable API subset, `activeTab` + `scripting` for user-triggered work, optional access where feasible, bundled code, and narrow matches. Record slug, requested browsers, and status in `.addonry/project.json`. Confirmed criteria live in `.addonry/contract.json`. Final-ready reads `.addonry/verification.json` and `.addonry/firefox-verification.json`; the quality gate reads `.addonry/quality-report.json`.
 
 ## Inspect target with Chrome DevTools MCP
 

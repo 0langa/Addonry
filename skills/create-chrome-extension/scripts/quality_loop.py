@@ -23,7 +23,6 @@ from validate_extension import source_digest, validate_extension
 CONTRACT_RELATIVE = Path(".addonry/contract.json")
 STATE_RELATIVE = Path(".addonry/quality-loop.json")
 REPORT_RELATIVE = Path(".addonry/quality-report.json")
-PROJECT_RELATIVE = Path(".addonry/project.json")
 SUPPORTED_EVIDENCE = frozenset({"static-validation", "chrome-e2e", "firefox-e2e", "package"})
 SUPPORTED_BROWSERS = frozenset({"chrome", "firefox"})
 IGNORED_SOURCE_PARTS = frozenset({".addonry", ".git", "artifacts", "node_modules", "web-ext-artifacts", "__pycache__"})
@@ -749,19 +748,6 @@ def _persist_assessment(root: Path, contract: dict[str, Any], report: dict[str, 
     report["nextAction"] = next_action
     _atomic_write_json(root / REPORT_RELATIVE, report)
     _atomic_write_json(state_path, state)
-
-    project_path = root / PROJECT_RELATIVE
-    project, _ = _read_object(project_path)
-    if project is not None:
-        project["qualityLoop"] = {
-            "status": status,
-            "contract": CONTRACT_RELATIVE.as_posix(),
-            "state": STATE_RELATIVE.as_posix(),
-            "report": REPORT_RELATIVE.as_posix(),
-            "coveragePercent": report["coverage"]["percent"],
-            "sourceSha256": report["sourceSha256"],
-        }
-        _atomic_write_json(project_path, project)
     return report
 
 

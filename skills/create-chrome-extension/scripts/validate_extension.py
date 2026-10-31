@@ -40,7 +40,6 @@ class Finding:
 
 
 def _confirmed_contract_has_criteria(root: Path) -> bool:
-    """Allow quality-loop contract to replace legacy project.acceptance map."""
     contract_path = root / ".addonry" / "contract.json"
     try:
         contract = json.loads(contract_path.read_text(encoding="utf-8"))
@@ -309,13 +308,8 @@ def validate_extension(
             else:
                 if not isinstance(project, dict) or project.get("status") == "scaffolded":
                     findings.append(Finding("error", "scaffold-status", "project status must move beyond scaffolded before final verification", ".addonry/project.json"))
-                legacy_acceptance = (
-                    isinstance(project, dict)
-                    and isinstance(project.get("acceptance"), dict)
-                    and bool(project["acceptance"])
-                )
-                if not legacy_acceptance and not _confirmed_contract_has_criteria(root):
-                    findings.append(Finding("error", "acceptance-missing", "record concrete acceptance criteria before final verification", ".addonry/project.json"))
+                if not _confirmed_contract_has_criteria(root):
+                    findings.append(Finding("error", "acceptance-missing", "record concrete acceptance criteria before final verification", ".addonry/contract.json"))
 
         starter_popup = "Ready. Replace this scaffold with requested workflow."
         for path in root.rglob("*.html"):

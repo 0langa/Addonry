@@ -117,7 +117,6 @@ Use `block` only after reproducing unavailable authority, authentication, browse
 
 - `.addonry/quality-loop.json`: iteration, repeat count, failure fingerprint, status, next action, bounded history.
 - `.addonry/quality-report.json`: source/contract digests, traceability rows, gate inventory, findings, coverage.
-- `.addonry/project.json` `qualityLoop`: compact current status pointer.
 
 Source digest excludes metadata and regenerable caches/artifacts. Runtime source, manifest, and tests remain source-digest-bound. Confirmed contract has separate digest embedded in browser and package evidence. Any relevant source/test or acceptance-contract change invalidates prior proof.
 

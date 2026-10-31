@@ -201,13 +201,6 @@ def package_extension(
         metadata_dir.mkdir(exist_ok=True)
         report_path = metadata_dir / "package-report.json"
         report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8", newline="\n")
-        if isinstance(project, dict):
-            project["packaging"] = {
-                "status": "packaged",
-                "targets": list(requested),
-                "report": str(report_path),
-            }
-            project_path.write_text(json.dumps(project, indent=2) + "\n", encoding="utf-8", newline="\n")
     return report
 
 
