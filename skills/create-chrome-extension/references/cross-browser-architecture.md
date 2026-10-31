@@ -36,7 +36,7 @@ Chrome package keeps `service_worker`. Firefox package keeps `scripts`. Backgrou
 - Use local compatibility adapter or bundled WebExtension polyfill when promise/namespace behavior differs. Never fetch runtime code.
 - Treat `side_panel`, `offscreen`, proxy configuration, request interception, and browser-specific UI as explicit single-browser design until both targets pass current compatibility research.
 - Keep browser branching centralized; do not scatter user-agent checks.
-- Record browser-specific limitations in `.addonry/verification.json` and `.addonry/firefox-verification.json`. Confirmed criteria stay in `.addonry/contract.json`; the quality gate reads `.addonry/quality-report.json`.
+- Record browser-specific limitations in `.addonry/contract.json`: scope the affected criterion with `appliesTo` and state the difference in its `requirement` and `acceptance`. Report them under `Known limits` in the completion report. Verification JSON is harness output; never edit it, and final-ready fails while its `limitations` is non-empty.
 
 ## Manifest rules
 
