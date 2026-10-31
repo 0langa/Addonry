@@ -32,6 +32,13 @@ SECRET_OUTPUT_RE = re.compile(
     r"(?i)(api[_-]?key|access[_-]?token|client[_-]?secret|password)(\s*[:=]\s*)[^\s,;]+"
 )
 HISTORY_LIMIT = 20
+# Specific repair text for final-ready evidence findings, keyed by validator code without the browser prefix.
+FINAL_READY_REPAIRS = {
+    "verification-not-passed": "Inspect {filename}, repair failure, and rerun browser gate.",
+    "verification-stale": "Rerun {browser} verification after latest source change.",
+    "verification-contract-stale": "Rerun {browser} verification after latest contract confirmation.",
+    "verification-scenario-mismatch": "Run {scenario} for this extension.",
+}
 
 
 @dataclass(frozen=True)
@@ -451,10 +458,12 @@ def _browser_evidence(root: Path, browser: str) -> tuple[dict[str, Any], list[Lo
         findings.append(LoopFinding("browser", f"{browser}-criterion-proof-missing", f"{browser.title()} scenario did not report criteriaPassed", "Return criteriaPassed only after tailored scenario assertions succeed.", path=f".addonry/{filename}"))
     else:
         passed = set(criteria_passed)
+    scenario = "tests/e2e.cjs" if browser == "chrome" else "tests/firefox_e2e.py"
     final_errors = [item for item in validate_extension(root, final_ready=True, target=browser) if item.level == "error"]
     for item in final_errors:
-        code = item.code if item.code.startswith(browser) else f"{browser}-{item.code}"
-        findings.append(LoopFinding("final-ready", code, item.message, f"Resolve final-ready {browser} evidence gate.", path=item.path))
+        base = item.code.removeprefix(f"{browser}-")
+        repair = FINAL_READY_REPAIRS.get(base, "Resolve final-ready {browser} evidence gate.")
+        findings.append(LoopFinding("final-ready", f"{browser}-{base}", item.message, repair.format(browser=browser, filename=filename, scenario=scenario), path=item.path))
     status = "passed" if not findings else "failed"
     return {"status": status, "criteriaPassed": sorted(passed), "path": f".addonry/{filename}"}, findings, passed
 
